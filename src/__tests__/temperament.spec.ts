@@ -50,4 +50,33 @@ describe('Temperament', () => {
     expect(dot(meantone, octave)).toBeCloseTo(Math.LN2);
     expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
   });
+
+  it('can calculate miracle from commas', () => {
+    const subgroup = [0, 1, 2, 3];
+    const metric = inverseLogMetric(subgroup);
+    const marvelComma = fractionToMonzoAndResidual(
+      new Fraction(225, 224),
+      4
+    )[0];
+    const gamelisma = fractionToMonzoAndResidual(
+      new Fraction(1029, 1024),
+      4
+    )[0];
+    const temperament = Temperament.fromCommaList(
+      [marvelComma, gamelisma],
+      metric,
+      subgroup
+    );
+    const miracle = temperament.toPOTE();
+
+    const largeSecor = fractionToMonzoAndResidual(new Fraction(15, 14), 4)[0];
+    const smallSecor = fractionToMonzoAndResidual(new Fraction(16, 15), 4)[0];
+    const octave = [1, 0, 0, 0];
+
+    expect(dot(miracle, marvelComma)).toBeCloseTo(0);
+    expect(dot(miracle, gamelisma)).toBeCloseTo(0);
+    expect(dot(miracle, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(miracle, smallSecor))).toBeCloseTo(116.675);
+    expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
+  });
 });

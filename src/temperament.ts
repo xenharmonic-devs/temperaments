@@ -78,7 +78,11 @@ export class Temperament {
     }
     const promotedVals = vals.map(val => {
       const vector = Array(algebraSize).fill(0);
-      vector.splice(1, val.length, ...val.map((v, i) => v * metric[i]));
+      vector.splice(
+        1,
+        val.length,
+        ...subgroup.map((index, i) => val[index] * metric[i])
+      );
       return new Clifford(vector);
     });
     return new Temperament(
@@ -106,12 +110,16 @@ export class Temperament {
 
     const promotedCommas = commas.map(comma => {
       const vector = Array(algebraSize).fill(0);
-      vector.splice(1, comma.length, ...comma.map((c, i) => c / metric[i]));
+      vector.splice(
+        1,
+        comma.length,
+        ...subgroup.map((index, i) => comma[index] / metric[i])
+      );
       return new Clifford(vector).Mul(pseudoScalar);
     });
     return new Temperament(
       Clifford,
-      promotedCommas.reduce((a, b) => Clifford.Wedge(a, b)),
+      promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
       metric,
       subgroup
     );
