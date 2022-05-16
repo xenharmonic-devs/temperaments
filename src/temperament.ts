@@ -1,0 +1,119 @@
+import type {Monzo} from './monzo';
+import Algebra from 'ganja.js';
+import {LOG_PRIMES} from './constants';
+
+// No interpretation in Geometric Algebra
+export type Mapping = number[];
+
+// Promoted to vectors in Geometric Algebra
+export type Val = number[];
+
+// Promoted to pseudovectors in GA
+export type Comma = number[];
+
+// The weighting vector
+// I think ganja.js ignores metric magnitude so we pre- and post-process
+export type Metric = number[];
+
+export type Subgroup = number[];
+
+export function inverseLogMetric(subgroup: Subgroup) {
+  return subgroup.map(index => 1 / LOG_PRIMES[index]);
+}
+
+export function natsToCents(nats: number) {
+  return (nats / Math.LN2) * 1200;
+}
+
+export function centsToNats(cents: number) {
+  return (cents / 1200) * Math.LN2;
+}
+
+// Musical temperament represented in Geometric Algebra
+export class Temperament {
+  algebra: any; // Clifford Algebra
+  value: any; // Multivector of the Clifford Algebra
+  metric: Metric;
+  subgroup: Subgroup;
+
+  constructor(algebra: any, value: any, metric: Metric, subgroup: Subgroup) {
+    this.algebra = algebra;
+    this.value = value;
+    this.metric = metric;
+    this.subgroup = subgroup;
+  }
+
+  toTenneyEuclid(): Mapping {
+    const jip = this.subgroup.map(
+      (index, i) => LOG_PRIMES[index] * this.metric[i]
+    );
+    const vector = Array(1 << this.metric.length).fill(0);
+    vector.splice(1, jip.length, ...jip);
+    const promotedJip = new this.algebra(vector);
+    const projected = promotedJip.Dot(this.value).Div(this.value);
+
+    const result = LOG_PRIMES.slice(
+      0,
+      this.subgroup.reduce((a, b) => Math.max(a, b))
+    );
+    this.subgroup.forEach((index, i) => {
+      result[index] = projected[1 + i] / this.metric[i];
+    });
+    return result;
+  }
+
+  toPOTE(): Mapping {
+    const result = this.toTenneyEuclid();
+    return result.map(component => (component / result[0]) * Math.LN2);
+  }
+
+  static fromValList(vals: Val[], metric: Metric, subgroup: Subgroup) {
+    const Clifford = Algebra(metric.length);
+    const algebraSize = 1 << metric.length;
+
+    if (!vals.length) {
+      const scalar = Array(algebraSize).fill(0);
+      scalar[0] = 1;
+      return new Temperament(Clifford, new Clifford(scalar), metric, subgroup);
+    }
+    const promotedVals = vals.map(val => {
+      const vector = Array(algebraSize).fill(0);
+      vector.splice(1, val.length, ...val.map((v, i) => v * metric[i]));
+      return new Clifford(vector);
+    });
+    return new Temperament(
+      Clifford,
+      promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
+      metric,
+      subgroup
+    );
+  }
+
+  static fromCommaList(commas: Comma[], metric: Metric, subgroup: Subgroup) {
+    const Clifford = Algebra(metric.length);
+    const algebraSize = 1 << metric.length;
+
+    const pseudoScalar = Array(algebraSize).fill(0);
+    pseudoScalar[algebraSize - 1] = 1;
+    if (!commas.length) {
+      return new Temperament(
+        Clifford,
+        new Clifford(pseudoScalar),
+        metric,
+        subgroup
+      );
+    }
+
+    const promotedCommas = commas.map(comma => {
+      const vector = Array(algebraSize).fill(0);
+      vector.splice(1, comma.length, ...comma.map((c, i) => c / metric[i]));
+      return new Clifford(vector).Mul(pseudoScalar);
+    });
+    return new Temperament(
+      Clifford,
+      promotedCommas.reduce((a, b) => Clifford.Wedge(a, b)),
+      metric,
+      subgroup
+    );
+  }
+}
