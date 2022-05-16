@@ -54,7 +54,7 @@ export class Temperament {
 
     const result = LOG_PRIMES.slice(
       0,
-      this.subgroup.reduce((a, b) => Math.max(a, b))
+      1 + this.subgroup.reduce((a, b) => Math.max(a, b))
     );
     this.subgroup.forEach((index, i) => {
       result[index] = projected[1 + i] / this.metric[i];
@@ -80,7 +80,7 @@ export class Temperament {
       const vector = Array(algebraSize).fill(0);
       vector.splice(
         1,
-        val.length,
+        subgroup.length,
         ...subgroup.map((index, i) => val[index] * metric[i])
       );
       return new Clifford(vector);
@@ -97,22 +97,18 @@ export class Temperament {
     const Clifford = Algebra(metric.length);
     const algebraSize = 1 << metric.length;
 
-    const pseudoScalar = Array(algebraSize).fill(0);
-    pseudoScalar[algebraSize - 1] = 1;
+    const pseudoScalar_ = Array(algebraSize).fill(0);
+    pseudoScalar_[algebraSize - 1] = 1;
+    const pseudoScalar = new Clifford(pseudoScalar_);
     if (!commas.length) {
-      return new Temperament(
-        Clifford,
-        new Clifford(pseudoScalar),
-        metric,
-        subgroup
-      );
+      return new Temperament(Clifford, pseudoScalar, metric, subgroup);
     }
 
     const promotedCommas = commas.map(comma => {
       const vector = Array(algebraSize).fill(0);
       vector.splice(
         1,
-        comma.length,
+        subgroup.length,
         ...subgroup.map((index, i) => comma[index] / metric[i])
       );
       return new Clifford(vector).Mul(pseudoScalar);

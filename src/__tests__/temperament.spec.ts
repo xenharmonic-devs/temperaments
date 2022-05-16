@@ -79,4 +79,25 @@ describe('Temperament', () => {
     expect(natsToCents(dot(miracle, smallSecor))).toBeCloseTo(116.675);
     expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
   });
+
+  it('can calculate orgone from commas', () => {
+    const subgroup = [0, 3, 4];
+    const metric = inverseLogMetric(subgroup);
+    const orgonisma = fractionToMonzoAndResidual(
+      new Fraction(65536, 65219),
+      5
+    )[0];
+    const temperament = Temperament.fromCommaList(
+      [orgonisma],
+      metric,
+      subgroup
+    );
+    const orgone = temperament.toPOTE();
+    const smitone = fractionToMonzoAndResidual(new Fraction(77, 64), 5)[0];
+    const octave = [1, 0, 0, 0, 0];
+
+    expect(dot(orgone, orgonisma)).toBeCloseTo(0);
+    expect(dot(orgone, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
+  });
 });
