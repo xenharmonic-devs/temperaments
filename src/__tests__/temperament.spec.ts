@@ -7,7 +7,6 @@ import {
   Temperament,
   natsToCents,
   patentVal,
-  flatMetric,
   fromWarts,
 } from '../temperament';
 
@@ -17,12 +16,8 @@ describe('Temperament', () => {
     const metric = inverseLogMetric(subgroup);
     const edo12 = [12, 19, 28];
     const edo19 = [19, 30, 44];
-    const temperament = Temperament.fromValList(
-      [edo12, edo19],
-      subgroup,
-      metric
-    );
-    const meantone = temperament.toPOTE();
+    const temperament = Temperament.fromValList([edo12, edo19], subgroup);
+    const meantone = temperament.toPOTE(metric);
 
     const syntonicComma = fractionToMonzoAndResidual(
       new Fraction(81, 80),
@@ -40,12 +35,8 @@ describe('Temperament', () => {
     const subgroup = [0, 1, 2];
     const metric = inverseLogMetric(subgroup);
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
-    const temperament = Temperament.fromCommaList(
-      [syntonicComma],
-      subgroup,
-      metric
-    );
-    const meantone = temperament.toPOTE();
+    const temperament = Temperament.fromCommaList([syntonicComma], subgroup);
+    const meantone = temperament.toPOTE(metric);
 
     const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 3)[0];
     const octave = [1, 0, 0];
@@ -264,28 +255,17 @@ describe('Temperament', () => {
     const edo19 = patentVal(19, 2, 3);
     const edo31 = patentVal(31, 2, 3);
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
-    const metric = flatMetric(subgroup);
 
-    const twelveAndNineteen = Temperament.fromValList(
-      [edo12, edo19],
-      subgroup,
-      metric
-    );
+    const twelveAndNineteen = Temperament.fromValList([edo12, edo19], subgroup);
     const twelveAndThirtyOne = Temperament.fromValList(
       [edo12, edo31],
-      subgroup,
-      metric
+      subgroup
     );
     const nineteenAndThirtyOne = Temperament.fromValList(
       [edo19, edo31],
-      subgroup,
-      metric
+      subgroup
     );
-    const meantone = Temperament.fromCommaList(
-      [syntonicComma],
-      subgroup,
-      metric
-    );
+    const meantone = Temperament.fromCommaList([syntonicComma], subgroup);
 
     for (let i = 0; i < 2 ** 3; ++i) {
       expect(meantone.value[i]).toBe(Math.floor(meantone.value[i]));
@@ -301,14 +281,12 @@ describe('Temperament', () => {
     const edo10 = patentVal(10, 2, 4);
     const edo12 = patentVal(12, 2, 4);
     const comma = fractionToMonzo(new Fraction(225, 224));
-    const metric = flatMetric(subgroup);
 
     const nineAndTenAndTwelve = Temperament.fromValList(
       [edo9, edo10, edo12],
-      subgroup,
-      metric
+      subgroup
     );
-    const marvel = Temperament.fromCommaList([comma], subgroup, metric);
+    const marvel = Temperament.fromCommaList([comma], subgroup);
 
     for (let i = 0; i < 2 ** 4; ++i) {
       expect(marvel.value[i]).toBe(Math.floor(marvel.value[i]));
@@ -325,18 +303,12 @@ describe('Temperament', () => {
       new Fraction(2048, 2025),
       4
     )[0];
-    const metric = flatMetric(subgroup);
 
     const tenAndTwelveAndFortySix = Temperament.fromValList(
       [edo10, edo12, edo46],
-      subgroup,
-      metric
+      subgroup
     );
-    const diaschismic = Temperament.fromCommaList(
-      [diaschisma],
-      subgroup,
-      metric
-    );
+    const diaschismic = Temperament.fromCommaList([diaschisma], subgroup);
 
     for (let i = 0; i < 2 ** 4; ++i) {
       expect(diaschismic.value[i]).toBe(Math.floor(diaschismic.value[i]));

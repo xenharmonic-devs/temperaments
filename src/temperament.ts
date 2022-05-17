@@ -107,44 +107,56 @@ export function fromWarts(
 export class Temperament {
   algebra: any; // Clifford Algebra
   value: any; // Multivector of the Clifford Algebra
-  metric: Metric;
   subgroup: Subgroup;
 
-  constructor(algebra: any, value: any, metric: Metric, subgroup: Subgroup) {
+  constructor(algebra: any, value: any, subgroup: Subgroup) {
     this.algebra = algebra;
     this.value = value;
-    this.metric = metric;
     this.subgroup = subgroup;
   }
 
-  toTenneyEuclid(): Mapping {
-    const jip = this.subgroup.map(
-      (index, i) => LOG_PRIMES[index] * this.metric[i]
-    );
-    const vector = Array(1 << this.metric.length).fill(0);
+  toTenneyEuclid(metric_?: Metric): Mapping {
+    const metric =
+      metric_ === undefined ? inverseLogMetric(this.subgroup) : metric_;
+    const jip = this.subgroup.map((index, i) => LOG_PRIMES[index] * metric[i]);
+    const vector = Array(1 << this.subgroup.length).fill(0);
     vector.splice(1, jip.length, ...jip);
     const promotedJip = new this.algebra(vector);
-    const projected = promotedJip.Dot(this.value).Div(this.value);
+
+    const weightedValue_: number[] = [];
+    (this.algebra.describe().basis as string[]).forEach((label, index) => {
+      let component = this.value[index];
+      if (label[0] === 'e') {
+        label
+          .slice(1)
+          .split('')
+          .forEach(i => (component *= metric[parseInt(i) - 1]));
+      }
+      weightedValue_.push(component);
+    });
+    const weightedValue = new this.algebra(weightedValue_);
+
+    const projected = promotedJip.Dot(weightedValue).Div(weightedValue);
 
     const result = LOG_PRIMES.slice(
       0,
       1 + this.subgroup.reduce((a, b) => Math.max(a, b))
     );
     this.subgroup.forEach((index, i) => {
-      result[index] = projected[1 + i] / this.metric[i];
+      result[index] = projected[1 + i] / metric[i];
     });
     return result;
   }
 
-  toPOTE(): Mapping {
-    const result = this.toTenneyEuclid();
+  toPOTE(metric?: Metric): Mapping {
+    const result = this.toTenneyEuclid(metric);
     const indexOfEquivalence = this.subgroup.reduce((a, b) => Math.min(a, b));
     const purifier =
       LOG_PRIMES[indexOfEquivalence] / result[indexOfEquivalence];
     return result.map(component => component * purifier);
   }
 
-  static fromValList(vals: Val[], subgroup_?: Subgroup, metric_?: Metric) {
+  static fromValList(vals: Val[], subgroup_?: Subgroup) {
     let subgroup: Subgroup = [];
     if (subgroup_ === undefined) {
       if (!vals.length) {
@@ -156,65 +168,49 @@ export class Temperament {
     } else {
       subgroup = subgroup_;
     }
-    const metric = metric_ === undefined ? inverseLogMetric(subgroup) : metric_;
 
-    const Clifford = Algebra(metric.length);
-    const algebraSize = 1 << metric.length;
+    const Clifford = Algebra(subgroup.length);
+    const algebraSize = 1 << subgroup.length;
 
     if (!vals.length) {
       const scalar = Array(algebraSize).fill(0);
       scalar[0] = 1;
-      return new Temperament(Clifford, new Clifford(scalar), metric, subgroup);
+      return new Temperament(Clifford, new Clifford(scalar), subgroup);
     }
     const promotedVals = vals.map(val => {
       const vector = Array(algebraSize).fill(0);
-      vector.splice(
-        1,
-        subgroup.length,
-        ...subgroup.map((index, i) => val[index] * metric[i])
-      );
+      vector.splice(1, subgroup.length, ...subgroup.map(index => val[index]));
       return new Clifford(vector);
     });
     return new Temperament(
       Clifford,
       promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
-      metric,
       subgroup
     );
   }
 
-  static fromCommaList(
-    commas: Comma[],
-    subgroup_?: Subgroup,
-    metric_?: Metric
-  ) {
+  static fromCommaList(commas: Comma[], subgroup_?: Subgroup) {
     const subgroup =
       subgroup_ === undefined ? inferSubgroup(commas) : subgroup_;
-    const metric = metric_ === undefined ? inverseLogMetric(subgroup) : metric_;
 
-    const Clifford = Algebra(metric.length);
-    const algebraSize = 1 << metric.length;
+    const Clifford = Algebra(subgroup.length);
+    const algebraSize = 1 << subgroup.length;
 
     const pseudoScalar_ = Array(algebraSize).fill(0);
     pseudoScalar_[algebraSize - 1] = 1;
     const pseudoScalar = new Clifford(pseudoScalar_);
     if (!commas.length) {
-      return new Temperament(Clifford, pseudoScalar, metric, subgroup);
+      return new Temperament(Clifford, pseudoScalar, subgroup);
     }
 
     const promotedCommas = commas.map(comma => {
       const vector = Array(algebraSize).fill(0);
-      vector.splice(
-        1,
-        subgroup.length,
-        ...subgroup.map((index, i) => comma[index] / metric[i])
-      );
+      vector.splice(1, subgroup.length, ...subgroup.map(index => comma[index]));
       return new Clifford(vector).Mul(pseudoScalar);
     });
     return new Temperament(
       Clifford,
       promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
-      metric,
       subgroup
     );
   }
