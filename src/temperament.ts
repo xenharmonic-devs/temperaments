@@ -83,7 +83,10 @@ export class Temperament {
 
   toPOTE(): Mapping {
     const result = this.toTenneyEuclid();
-    return result.map(component => (component / result[0]) * Math.LN2);
+    const indexOfEquivalence = this.subgroup.reduce((a, b) => Math.min(a, b));
+    const purifier =
+      LOG_PRIMES[indexOfEquivalence] / result[indexOfEquivalence];
+    return result.map(component => component * purifier);
   }
 
   static fromValList(vals: Val[], subgroup: Subgroup, metric_?: Metric) {

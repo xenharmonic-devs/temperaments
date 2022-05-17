@@ -5,7 +5,7 @@ import {dot, fractionToMonzoAndResidual} from '../monzo';
 import {inverseLogMetric, Temperament, natsToCents} from '../temperament';
 
 describe('Temperament', () => {
-  it('can calculate meantone from vals', () => {
+  it('calculates meantone from vals', () => {
     const subgroup = [0, 1, 2];
     const metric = inverseLogMetric(subgroup);
     const edo12 = [12, 19, 28];
@@ -29,7 +29,7 @@ describe('Temperament', () => {
     expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
   });
 
-  it('can calculate meantone from commas', () => {
+  it('calculates meantone from commas', () => {
     const subgroup = [0, 1, 2];
     const metric = inverseLogMetric(subgroup);
     const syntonicComma = fractionToMonzoAndResidual(
@@ -51,7 +51,7 @@ describe('Temperament', () => {
     expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
   });
 
-  it('can calculate miracle from commas', () => {
+  it('calculates miracle from commas', () => {
     const subgroup = [0, 1, 2, 3];
     const marvelComma = fractionToMonzoAndResidual(
       new Fraction(225, 224),
@@ -78,7 +78,7 @@ describe('Temperament', () => {
     expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
   });
 
-  it('can calculate orgone from commas', () => {
+  it('calculates orgone from commas', () => {
     const subgroup = [0, 3, 4];
     const orgonisma = fractionToMonzoAndResidual(
       new Fraction(65536, 65219),
@@ -94,7 +94,7 @@ describe('Temperament', () => {
     expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
   });
 
-  it('can calculate blackwood in the 2.3 subgroup', () => {
+  it('calculates blackwood in the 2.3 subgroup', () => {
     const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 2)[0];
     const temperament = Temperament.fromCommaList([limma]);
     const blackwood = temperament.toPOTE();
@@ -104,7 +104,7 @@ describe('Temperament', () => {
     expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
   });
 
-  it('can calculate blackwood in the 2.3.5 subgroup', () => {
+  it('calculates blackwood in the 2.3.5 subgroup', () => {
     const subgroup = [0, 1, 2];
     const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
     const temperament = Temperament.fromCommaList([limma], subgroup);
@@ -115,5 +115,15 @@ describe('Temperament', () => {
     expect(blackwood.length).toBe(3);
     expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
     expect(natsToCents(dot(blackwood, majorThird))).toBeCloseTo(399.594);
+  });
+
+  it('calculates arcturus in the 3.5.7 subgroup', () => {
+    const comma = fractionToMonzoAndResidual(new Fraction(15625, 15309), 4)[0];
+    const temperament = Temperament.fromCommaList([comma]);
+    const arcturus = temperament.toPOTE();
+    const majorSixth = fractionToMonzoAndResidual(new Fraction(5, 3), 4)[0];
+
+    expect(arcturus.length).toBe(4);
+    expect(natsToCents(dot(arcturus, majorSixth))).toBeCloseTo(878.042);
   });
 });
