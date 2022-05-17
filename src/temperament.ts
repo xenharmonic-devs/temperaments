@@ -29,6 +29,25 @@ export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
 }
 
+export function inferSubgroup(monzos: Monzo[]): Subgroup {
+  const result: Subgroup = [];
+  if (!monzos.length) {
+    return result;
+  }
+  for (let i = 0; i < monzos[0].length; ++i) {
+    let hasComponent = false;
+    monzos.forEach(monzo => {
+      if (monzo[i] !== 0) {
+        hasComponent = true;
+      }
+    });
+    if (hasComponent) {
+      result.push(i);
+    }
+  }
+  return result;
+}
+
 // Musical temperament represented in Geometric Algebra
 export class Temperament {
   algebra: any; // Clifford Algebra
@@ -67,7 +86,9 @@ export class Temperament {
     return result.map(component => (component / result[0]) * Math.LN2);
   }
 
-  static fromValList(vals: Val[], metric: Metric, subgroup: Subgroup) {
+  static fromValList(vals: Val[], subgroup: Subgroup, metric_?: Metric) {
+    const metric = metric_ === undefined ? inverseLogMetric(subgroup) : metric_;
+
     const Clifford = Algebra(metric.length);
     const algebraSize = 1 << metric.length;
 
@@ -93,7 +114,15 @@ export class Temperament {
     );
   }
 
-  static fromCommaList(commas: Comma[], metric: Metric, subgroup: Subgroup) {
+  static fromCommaList(
+    commas: Comma[],
+    subgroup_?: Subgroup,
+    metric_?: Metric
+  ) {
+    const subgroup =
+      subgroup_ === undefined ? inferSubgroup(commas) : subgroup_;
+    const metric = metric_ === undefined ? inverseLogMetric(subgroup) : metric_;
+
     const Clifford = Algebra(metric.length);
     const algebraSize = 1 << metric.length;
 

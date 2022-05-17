@@ -12,8 +12,8 @@ describe('Temperament', () => {
     const edo19 = [19, 30, 44];
     const temperament = Temperament.fromValList(
       [edo12, edo19],
-      metric,
-      subgroup
+      subgroup,
+      metric
     );
     const meantone = temperament.toPOTE();
 
@@ -38,8 +38,8 @@ describe('Temperament', () => {
     )[0];
     const temperament = Temperament.fromCommaList(
       [syntonicComma],
-      metric,
-      subgroup
+      subgroup,
+      metric
     );
     const meantone = temperament.toPOTE();
 
@@ -53,7 +53,6 @@ describe('Temperament', () => {
 
   it('can calculate miracle from commas', () => {
     const subgroup = [0, 1, 2, 3];
-    const metric = inverseLogMetric(subgroup);
     const marvelComma = fractionToMonzoAndResidual(
       new Fraction(225, 224),
       4
@@ -64,7 +63,6 @@ describe('Temperament', () => {
     )[0];
     const temperament = Temperament.fromCommaList(
       [marvelComma, gamelisma],
-      metric,
       subgroup
     );
     const miracle = temperament.toPOTE();
@@ -82,16 +80,11 @@ describe('Temperament', () => {
 
   it('can calculate orgone from commas', () => {
     const subgroup = [0, 3, 4];
-    const metric = inverseLogMetric(subgroup);
     const orgonisma = fractionToMonzoAndResidual(
       new Fraction(65536, 65219),
       5
     )[0];
-    const temperament = Temperament.fromCommaList(
-      [orgonisma],
-      metric,
-      subgroup
-    );
+    const temperament = Temperament.fromCommaList([orgonisma], subgroup);
     const orgone = temperament.toPOTE();
     const smitone = fractionToMonzoAndResidual(new Fraction(77, 64), 5)[0];
     const octave = [1, 0, 0, 0, 0];
@@ -99,5 +92,28 @@ describe('Temperament', () => {
     expect(dot(orgone, orgonisma)).toBeCloseTo(0);
     expect(dot(orgone, octave)).toBeCloseTo(Math.LN2);
     expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
+  });
+
+  it('can calculate blackwood in the 2.3 subgroup', () => {
+    const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 2)[0];
+    const temperament = Temperament.fromCommaList([limma]);
+    const blackwood = temperament.toPOTE();
+    const fifth = [-1, 1];
+
+    expect(blackwood.length).toBe(2);
+    expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
+  });
+
+  it('can calculate blackwood in the 2.3.5 subgroup', () => {
+    const subgroup = [0, 1, 2];
+    const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
+    const temperament = Temperament.fromCommaList([limma], subgroup);
+    const blackwood = temperament.toPOTE();
+    const majorThird = fractionToMonzoAndResidual(new Fraction(5, 4), 3)[0];
+    const fifth = [-1, 1, 0];
+
+    expect(blackwood.length).toBe(3);
+    expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
+    expect(natsToCents(dot(blackwood, majorThird))).toBeCloseTo(399.594);
   });
 });
