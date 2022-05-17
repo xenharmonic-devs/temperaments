@@ -87,6 +87,23 @@ describe('Temperament', () => {
     expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
   });
 
+  it('calculates orgone from vals', () => {
+    const subgroup = [0, 3, 4];
+    const edo11 = patentVal(11, 2, 5);
+    const edo18 = patentVal(18, 2, 5);
+    const temperament = Temperament.fromValList([edo11, edo18], subgroup);
+    const orgone = temperament.toPOTE();
+    const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
+    const smitone = fractionToMonzo(new Fraction(77, 64));
+    const octave = [1, 0, 0, 0, 0];
+
+    expect(dot(edo11, orgonisma)).toBe(0);
+    expect(dot(edo18, orgonisma)).toBe(0);
+    expect(dot(orgone, orgonisma)).toBeCloseTo(0);
+    expect(dot(orgone, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
+  });
+
   it('calculates blackwood in the 2.3 subgroup', () => {
     const limma = fractionToMonzo(new Fraction(256, 243));
     const temperament = Temperament.fromCommaList([limma]);
