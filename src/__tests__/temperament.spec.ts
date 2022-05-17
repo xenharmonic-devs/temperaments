@@ -2,7 +2,12 @@ import {describe, it, expect} from 'vitest';
 import Fraction from 'fraction.js';
 
 import {dot, fractionToMonzoAndResidual, fractionToMonzo} from '../monzo';
-import {inverseLogMetric, Temperament, natsToCents} from '../temperament';
+import {
+  inverseLogMetric,
+  Temperament,
+  natsToCents,
+  patentVal,
+} from '../temperament';
 
 describe('Temperament', () => {
   it('calculates meantone from vals', () => {
@@ -113,5 +118,39 @@ describe('Temperament', () => {
 
     expect(arcturus.length).toBe(4);
     expect(natsToCents(dot(arcturus, majorSixth))).toBeCloseTo(878.042);
+  });
+
+  it('calculates starling rank 3 from a comma', () => {
+    const comma = fractionToMonzo(new Fraction(126, 125));
+    const temperament = Temperament.fromCommaList([comma]);
+    const starling = temperament.toTenneyEuclid();
+    const septimalQuarterTone = fractionToMonzo(new Fraction(36, 35));
+    const jubilisma = fractionToMonzo(new Fraction(50, 49));
+    const octave = [1, 0, 0, 0];
+
+    expect(starling.length).toBe(4);
+    expect(dot(starling, septimalQuarterTone)).toBeCloseTo(
+      dot(starling, jubilisma)
+    );
+    expect(natsToCents(dot(starling, octave))).toBeGreaterThan(1199);
+    expect(natsToCents(dot(starling, octave))).toBeLessThan(1200);
+  });
+
+  it('calculates starling rank 3 from a list of vals', () => {
+    const edo12 = patentVal(12, 2, 4);
+    const edo27 = patentVal(27, 2, 4);
+    const edo31 = patentVal(31, 2, 4);
+    const temperament = Temperament.fromValList([edo12, edo27, edo31]);
+    const starling = temperament.toTenneyEuclid();
+    const comma = fractionToMonzo(new Fraction(126, 125));
+    const octave = [1, 0, 0, 0];
+
+    expect(starling.length).toBe(4);
+    expect(dot(starling, comma)).toBeCloseTo(0);
+    expect(natsToCents(dot(starling, octave))).toBeGreaterThan(1199);
+    expect(natsToCents(dot(starling, octave))).toBeLessThan(1200);
+    expect(dot(edo12, comma)).toBe(0);
+    expect(dot(edo27, comma)).toBe(0);
+    expect(dot(edo31, comma)).toBe(0);
   });
 });

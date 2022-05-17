@@ -48,6 +48,17 @@ export function inferSubgroup(monzos: Monzo[]): Subgroup {
   return result;
 }
 
+export function patentVal(
+  divisions: number,
+  equave: number,
+  numberOfComponents: number
+) {
+  const divisionsPerLogEquave = divisions / Math.log(equave);
+  return LOG_PRIMES.slice(0, numberOfComponents).map(logPrime =>
+    Math.round(logPrime * divisionsPerLogEquave)
+  );
+}
+
 // Musical temperament represented in Geometric Algebra
 export class Temperament {
   algebra: any; // Clifford Algebra
@@ -89,7 +100,18 @@ export class Temperament {
     return result.map(component => component * purifier);
   }
 
-  static fromValList(vals: Val[], subgroup: Subgroup, metric_?: Metric) {
+  static fromValList(vals: Val[], subgroup_?: Subgroup, metric_?: Metric) {
+    let subgroup: Subgroup = [];
+    if (subgroup_ === undefined) {
+      if (!vals.length) {
+        throw new Error('No vals or subgroup given');
+      }
+      for (let i = 0; i < vals[0].length; ++i) {
+        subgroup.push(i);
+      }
+    } else {
+      subgroup = subgroup_;
+    }
     const metric = metric_ === undefined ? inverseLogMetric(subgroup) : metric_;
 
     const Clifford = Algebra(metric.length);
