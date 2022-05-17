@@ -8,6 +8,7 @@ import {
   natsToCents,
   patentVal,
   flatMetric,
+  fromWarts,
 } from '../temperament';
 
 describe('Temperament', () => {
@@ -233,6 +234,28 @@ describe('Temperament', () => {
     expect(marvel.length).toBe(4);
     expect(natsToCents(dot(marvel, fifth))).toBeCloseTo(700.4075);
     expect(natsToCents(dot(marvel, majorThird))).toBeCloseTo(383.6376);
+  });
+
+  it('calculates keenanismic rank 4 from a comma', () => {
+    const keenanisma = fractionToMonzo(new Fraction(385, 384));
+    const temperament = Temperament.fromCommaList([keenanisma]);
+    const keenanismic = temperament.toPOTE();
+
+    expect(keenanismic.length).toBe(5);
+    expect(dot(keenanismic, keenanisma)).toBeCloseTo(0);
+  });
+
+  it('calculates keenanismic rank 4 from a list of vals', () => {
+    const edo9 = patentVal(9, 2, 5);
+    const edo10 = patentVal(10, 2, 5);
+    const edo12e = fromWarts('12e', 2, 5);
+    const edo15 = patentVal(15, 2, 5);
+    const temperament = Temperament.fromValList([edo9, edo10, edo12e, edo15]);
+    const keenanismic = temperament.toPOTE();
+
+    const keenanisma = fractionToMonzo(new Fraction(385, 384));
+    expect(keenanismic.length).toBe(5);
+    expect(dot(keenanismic, keenanisma)).toBeCloseTo(0);
   });
 
   it('has a consistent internal representation for the same temperament in 3D', () => {

@@ -68,6 +68,41 @@ export function patentVal(
   );
 }
 
+function isDigit(character: string) {
+  return '0123456789'.includes(character);
+}
+
+export function fromWarts(
+  token: string,
+  equave: number,
+  numberOfComponents: number
+) {
+  let numString = '';
+  while (isDigit(token[0])) {
+    numString += token[0];
+    token = token.slice(1);
+  }
+  const divisions = parseInt(numString);
+  const val = patentVal(divisions, equave, numberOfComponents);
+  const warts = token
+    .toLowerCase()
+    .split('')
+    .map(w => w.charCodeAt(0) - 97);
+  const counts = new Map();
+  warts.forEach(index => {
+    counts.set(index, (counts.get(index) || 0) + 1);
+  });
+  for (const [index, count] of counts) {
+    const modification = Math.floor((count + 1) / 2) * (2 * (count % 2) - 1);
+    if (val[index] > LOG_PRIMES[index]) {
+      val[index] -= modification;
+    } else {
+      val[index] += modification;
+    }
+  }
+  return val;
+}
+
 // Musical temperament represented in Geometric Algebra
 export class Temperament {
   algebra: any; // Clifford Algebra
