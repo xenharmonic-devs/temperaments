@@ -53,6 +53,38 @@ describe('Temperament', () => {
     expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
   });
 
+  it('reduces to the trivial temperament when given no vals', () => {
+    const subgroup = [0, 1, 2];
+    const temperament = Temperament.fromValList([], subgroup);
+    const trivial = temperament.toTenneyEuclid();
+    const octave = [1, 0, 0];
+    const tritave = [0, 1, 0];
+    const pentave = [0, 0, 1];
+
+    // I would've expected rank 0 temperament to map everything to unity...
+    // expect(dot(trivial, octave)).toBe(0);
+    // expect(dot(trivial, tritave)).toBe(0);
+    // expect(dot(trivial, pentave)).toBe(0);
+
+    // ...but instead it produces just intonation.
+    expect(dot(trivial, octave)).toBeCloseTo(Math.LN2);
+    expect(dot(trivial, tritave)).toBeCloseTo(Math.log(3));
+    expect(dot(trivial, pentave)).toBeCloseTo(Math.log(5));
+  });
+
+  it('reduces to just intonation when given no commas', () => {
+    const subgroup = [0, 1, 2];
+    const temperament = Temperament.fromCommaList([], subgroup);
+    const justIntonation = temperament.toTenneyEuclid();
+    const octave = [1, 0, 0];
+    const tritave = [0, 1, 0];
+    const pentave = [0, 0, 1];
+
+    expect(dot(justIntonation, octave)).toBeCloseTo(Math.LN2);
+    expect(dot(justIntonation, tritave)).toBeCloseTo(Math.log(3));
+    expect(dot(justIntonation, pentave)).toBeCloseTo(Math.log(5));
+  });
+
   it('calculates miracle from commas', () => {
     const subgroup = [0, 1, 2, 3];
     const marvelComma = fractionToMonzo(new Fraction(225, 224));
