@@ -4,6 +4,21 @@ import Fraction from 'fraction.js';
 // No interpretation in Geometric Algebra
 export type Monzo = number[];
 
+export function monzosEqual(a: Monzo, b: Monzo) {
+  if (a === b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function numberToMonzoAndResidual(
   n: number,
   numberOfComponents: number
