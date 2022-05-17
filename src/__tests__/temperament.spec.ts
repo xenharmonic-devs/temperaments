@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import Fraction from 'fraction.js';
 
-import {dot, fractionToMonzoAndResidual} from '../monzo';
+import {dot, fractionToMonzoAndResidual, fractionToMonzo} from '../monzo';
 import {inverseLogMetric, Temperament, natsToCents} from '../temperament';
 
 describe('Temperament', () => {
@@ -32,10 +32,7 @@ describe('Temperament', () => {
   it('calculates meantone from commas', () => {
     const subgroup = [0, 1, 2];
     const metric = inverseLogMetric(subgroup);
-    const syntonicComma = fractionToMonzoAndResidual(
-      new Fraction(81, 80),
-      3
-    )[0];
+    const syntonicComma = fractionToMonzo(new Fraction(81, 80));
     const temperament = Temperament.fromCommaList(
       [syntonicComma],
       subgroup,
@@ -53,21 +50,15 @@ describe('Temperament', () => {
 
   it('calculates miracle from commas', () => {
     const subgroup = [0, 1, 2, 3];
-    const marvelComma = fractionToMonzoAndResidual(
-      new Fraction(225, 224),
-      4
-    )[0];
-    const gamelisma = fractionToMonzoAndResidual(
-      new Fraction(1029, 1024),
-      4
-    )[0];
+    const marvelComma = fractionToMonzo(new Fraction(225, 224));
+    const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
     const temperament = Temperament.fromCommaList(
       [marvelComma, gamelisma],
       subgroup
     );
     const miracle = temperament.toPOTE();
 
-    const largeSecor = fractionToMonzoAndResidual(new Fraction(15, 14), 4)[0];
+    const largeSecor = fractionToMonzo(new Fraction(15, 14));
     const smallSecor = fractionToMonzoAndResidual(new Fraction(16, 15), 4)[0];
     const octave = [1, 0, 0, 0];
 
@@ -80,13 +71,10 @@ describe('Temperament', () => {
 
   it('calculates orgone from commas', () => {
     const subgroup = [0, 3, 4];
-    const orgonisma = fractionToMonzoAndResidual(
-      new Fraction(65536, 65219),
-      5
-    )[0];
+    const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
     const temperament = Temperament.fromCommaList([orgonisma], subgroup);
     const orgone = temperament.toPOTE();
-    const smitone = fractionToMonzoAndResidual(new Fraction(77, 64), 5)[0];
+    const smitone = fractionToMonzo(new Fraction(77, 64));
     const octave = [1, 0, 0, 0, 0];
 
     expect(dot(orgone, orgonisma)).toBeCloseTo(0);
@@ -95,10 +83,10 @@ describe('Temperament', () => {
   });
 
   it('calculates blackwood in the 2.3 subgroup', () => {
-    const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 2)[0];
+    const limma = fractionToMonzo(new Fraction(256, 243));
     const temperament = Temperament.fromCommaList([limma]);
     const blackwood = temperament.toPOTE();
-    const fifth = [-1, 1];
+    const fifth = fractionToMonzo(new Fraction(3, 2));
 
     expect(blackwood.length).toBe(2);
     expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
@@ -109,7 +97,7 @@ describe('Temperament', () => {
     const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
     const temperament = Temperament.fromCommaList([limma], subgroup);
     const blackwood = temperament.toPOTE();
-    const majorThird = fractionToMonzoAndResidual(new Fraction(5, 4), 3)[0];
+    const majorThird = fractionToMonzo(new Fraction(5, 4));
     const fifth = [-1, 1, 0];
 
     expect(blackwood.length).toBe(3);
@@ -118,7 +106,7 @@ describe('Temperament', () => {
   });
 
   it('calculates arcturus in the 3.5.7 subgroup', () => {
-    const comma = fractionToMonzoAndResidual(new Fraction(15625, 15309), 4)[0];
+    const comma = fractionToMonzo(new Fraction(15625, 15309));
     const temperament = Temperament.fromCommaList([comma]);
     const arcturus = temperament.toPOTE();
     const majorSixth = fractionToMonzoAndResidual(new Fraction(5, 3), 4)[0];

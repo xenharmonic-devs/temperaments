@@ -20,6 +20,26 @@ export function numberToMonzoAndResidual(
   return [result, n];
 }
 
+export function numberToMonzo(n: number) {
+  if (n < 0) {
+    throw new Error('Cannot convert negative number to monzo');
+  }
+  const result: Monzo = [];
+  PRIMES.every(prime => {
+    let component = 0;
+    while (n % prime === 0) {
+      n /= prime;
+      component++;
+    }
+    result.push(component);
+    return n !== 1;
+  });
+  if (n !== 1) {
+    throw new Error('Out of primes');
+  }
+  return result;
+}
+
 export function fractionToMonzoAndResidual(
   fraction: Fraction,
   numberOfComponents: number
@@ -47,6 +67,33 @@ export function fractionToMonzoAndResidual(
     d: denominator,
   });
   return [result, residual];
+}
+
+export function fractionToMonzo(fraction: Fraction) {
+  if (fraction.s < 0) {
+    throw new Error('Cannot convert negative fraction to monzo');
+  }
+  let numerator = fraction.n;
+  let denominator = fraction.d;
+
+  const result: Monzo = [];
+  PRIMES.every(prime => {
+    let component = 0;
+    while (numerator % prime === 0) {
+      numerator /= prime;
+      component++;
+    }
+    while (denominator % prime === 0) {
+      denominator /= prime;
+      component--;
+    }
+    result.push(component);
+    return numerator !== 1 || denominator !== 1;
+  });
+  if (numerator !== 1 || denominator !== 1) {
+    throw new Error('Out of primes');
+  }
+  return result;
 }
 
 export function dot(a: Monzo, b: Monzo): number {
