@@ -107,6 +107,25 @@ describe('Temperament', () => {
     expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
   });
 
+  it('calculates miracle from vals', () => {
+    const edo10 = patentVal(10, 2, 4);
+    const edo21 = patentVal(21, 2, 4);
+    const temperament = Temperament.fromValList([edo10, edo21]);
+    const miracle = temperament.toPOTE();
+
+    const marvelComma = fractionToMonzo(new Fraction(225, 224));
+    const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
+    const largeSecor = fractionToMonzo(new Fraction(15, 14));
+    const smallSecor = fractionToMonzoAndResidual(new Fraction(16, 15), 4)[0];
+    const octave = [1, 0, 0, 0];
+
+    expect(dot(miracle, marvelComma)).toBeCloseTo(0);
+    expect(dot(miracle, gamelisma)).toBeCloseTo(0);
+    expect(dot(miracle, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(miracle, smallSecor))).toBeCloseTo(116.675);
+    expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
+  });
+
   it('calculates orgone from commas', () => {
     const subgroup = [0, 3, 4];
     const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
