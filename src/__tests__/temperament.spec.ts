@@ -7,6 +7,7 @@ import {
   Temperament,
   natsToCents,
   patentVal,
+  flatMetric,
 } from '../temperament';
 
 describe('Temperament', () => {
@@ -201,5 +202,105 @@ describe('Temperament', () => {
     expect(dot(edo12, comma)).toBe(0);
     expect(dot(edo27, comma)).toBe(0);
     expect(dot(edo31, comma)).toBe(0);
+  });
+
+  it('calculates marvel rank 3 from a comma', () => {
+    const comma = fractionToMonzo(new Fraction(225, 224));
+    const temperament = Temperament.fromCommaList([comma]);
+    const marvel = temperament.toPOTE();
+    const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 4)[0];
+    const majorThird = fractionToMonzoAndResidual(new Fraction(5, 4), 4)[0];
+
+    expect(marvel.length).toBe(4);
+    expect(natsToCents(dot(marvel, fifth))).toBeCloseTo(700.4075);
+    expect(natsToCents(dot(marvel, majorThird))).toBeCloseTo(383.6376);
+  });
+
+  it('has a consistent internal representation for the same temperament in 3D', () => {
+    const subgroup = [0, 1, 2];
+    const edo12 = patentVal(12, 2, 3);
+    const edo19 = patentVal(19, 2, 3);
+    const edo31 = patentVal(31, 2, 3);
+    const syntonicComma = fractionToMonzo(new Fraction(81, 80));
+    const metric = flatMetric(subgroup);
+
+    const twelveAndNineteen = Temperament.fromValList(
+      [edo12, edo19],
+      subgroup,
+      metric
+    );
+    const twelveAndThirtyOne = Temperament.fromValList(
+      [edo12, edo31],
+      subgroup,
+      metric
+    );
+    const nineteenAndThirtyOne = Temperament.fromValList(
+      [edo19, edo31],
+      subgroup,
+      metric
+    );
+    const meantone = Temperament.fromCommaList(
+      [syntonicComma],
+      subgroup,
+      metric
+    );
+
+    for (let i = 0; i < 2 ** 3; ++i) {
+      expect(meantone.value[i]).toBe(Math.floor(meantone.value[i]));
+      expect(twelveAndNineteen.value[i]).toBe(meantone.value[i]);
+      expect(twelveAndThirtyOne.value[i]).toBe(meantone.value[i]);
+      expect(nineteenAndThirtyOne.value[i]).toBeCloseTo(-meantone.value[i]);
+    }
+  });
+
+  it('has a consistent internal representation for the same temperament in 4D', () => {
+    const subgroup = [0, 1, 2, 3];
+    const edo9 = patentVal(9, 2, 4);
+    const edo10 = patentVal(10, 2, 4);
+    const edo12 = patentVal(12, 2, 4);
+    const comma = fractionToMonzo(new Fraction(225, 224));
+    const metric = flatMetric(subgroup);
+
+    const nineAndTenAndTwelve = Temperament.fromValList(
+      [edo9, edo10, edo12],
+      subgroup,
+      metric
+    );
+    const marvel = Temperament.fromCommaList([comma], subgroup, metric);
+
+    for (let i = 0; i < 2 ** 4; ++i) {
+      expect(marvel.value[i]).toBe(Math.floor(marvel.value[i]));
+      expect(nineAndTenAndTwelve.value[i]).toBe(marvel.value[i]);
+    }
+  });
+
+  it('has a consistent internal representation for the same temperament in 4D with a 3D comma', () => {
+    const subgroup = [0, 1, 2, 3];
+    const edo10 = patentVal(10, 2, 4);
+    const edo12 = patentVal(12, 2, 4);
+    const edo46 = patentVal(46, 2, 4);
+    const diaschisma = fractionToMonzoAndResidual(
+      new Fraction(2048, 2025),
+      4
+    )[0];
+    const metric = flatMetric(subgroup);
+
+    const tenAndTwelveAndFortySix = Temperament.fromValList(
+      [edo10, edo12, edo46],
+      subgroup,
+      metric
+    );
+    const diaschismic = Temperament.fromCommaList(
+      [diaschisma],
+      subgroup,
+      metric
+    );
+
+    for (let i = 0; i < 2 ** 4; ++i) {
+      expect(diaschismic.value[i]).toBe(Math.floor(diaschismic.value[i]));
+      expect(tenAndTwelveAndFortySix.value[i]).toBeCloseTo(
+        -diaschismic.value[i]
+      );
+    }
   });
 });

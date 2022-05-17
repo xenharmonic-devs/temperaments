@@ -17,8 +17,17 @@ export type Metric = number[];
 
 export type Subgroup = number[];
 
-export function inverseLogMetric(subgroup: Subgroup) {
+export function inverseLogMetric(subgroup: Subgroup): Metric {
   return subgroup.map(index => 1 / LOG_PRIMES[index]);
+}
+
+export function flatMetric(subgroup: Subgroup): Metric;
+export function flatMetric(subgroupSize: number): Metric;
+export function flatMetric(subgroupOrSize: number | Subgroup) {
+  if (typeof subgroupOrSize === 'number') {
+    return Array(subgroupOrSize).fill(1);
+  }
+  return Array(subgroupOrSize.length).fill(1);
 }
 
 export function natsToCents(nats: number) {
