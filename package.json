@@ -1,4 +1,28 @@
 {
+  "name": "temperaments",
+  "author": "Lumi Pakkanen",
+  "version": "0.1.0",
+  "description": "Musical tunings/temperaments for Javascript",
+  "license": "MIT",
+  "main": "index",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frostburn/temperaments.git"
+  },
+  "bugs": {
+    "url": "https://github.com/frostburn/temperaments/issues"
+  },
+  "homepage": "https://github.com/frostburn/temperaments#readme",
+  "keywords": [
+    "Microtonal",
+    "Music",
+    "Xenharmonic",
+    "Temperament",
+    "Tuning",
+    "Math",
+    "Geometric Algebra",
+    "Clifford Algebra"
+  ],
   "devDependencies": {
     "@types/node": "^14.11.2",
     "gts": "^3.1.0",

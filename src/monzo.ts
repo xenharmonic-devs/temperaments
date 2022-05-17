@@ -98,7 +98,7 @@ export function fractionToMonzo(fraction: Fraction) {
 
 export function dot(a: Monzo, b: Monzo): number {
   let result = 0;
-  for (let i = 0; i < a.length; ++i) {
+  for (let i = 0; i < Math.min(a.length, b.length); ++i) {
     result += a[i] * b[i];
   }
   return result;
