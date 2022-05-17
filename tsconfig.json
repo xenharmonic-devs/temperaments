@@ -8,8 +8,7 @@
     },
   },
   "include": [
-    "src/index.ts",
-    // "src/**/*.ts",
-    // "test/**/*.ts"
+    "scripts/enumerate_temperaments.ts",
+    "src/index.ts"
   ]
 }

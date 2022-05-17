@@ -37,7 +37,8 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint",
-    "test:unit": "vitest"
+    "test:unit": "vitest",
+    "enumerate": "node build/scripts/enumerate_temperaments"
   },
   "dependencies": {
     "fraction.js": "^4.2.0",

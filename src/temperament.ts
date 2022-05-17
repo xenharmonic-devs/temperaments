@@ -1,5 +1,5 @@
 import type {Monzo} from './monzo';
-import Algebra from 'ganja.js';
+import Algebra = require('ganja.js');
 import {LOG_PRIMES} from './constants';
 
 // No interpretation in Geometric Algebra
