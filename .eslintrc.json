@@ -1,6 +1,8 @@
 {
   "extends": "./node_modules/gts/",
   "rules": {
+    "no-constant-condition": 0,
+    "@typescript-eslint/no-explicit-any": 0,
     "node/no-unpublished-import": ["error", {"allowModules": ["vitest"]}]
   }
 }

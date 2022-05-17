@@ -1,6 +1,7 @@
 import type {Monzo} from './monzo';
 import Algebra = require('ganja.js');
 import {LOG_PRIMES} from './constants';
+import {gcd} from './utils';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];
@@ -113,6 +114,58 @@ export class Temperament {
     this.algebra = algebra;
     this.value = value;
     this.subgroup = subgroup;
+  }
+
+  isNil() {
+    for (let i = 0; i < this.value.length; ++i) {
+      if (this.value[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  canonize() {
+    for (let i = 0; i < this.subgroup.length - 1; ++i) {
+      if (this.subgroup[i] >= this.subgroup[i + 1]) {
+        throw new Error('Out of order subgroup');
+      }
+    }
+    let firstSign = 0;
+    let commonFactor = 0;
+    for (let i = 0; i < this.value.length; ++i) {
+      commonFactor = gcd(commonFactor, Math.abs(this.value[i]));
+      if (!firstSign && this.value[i]) {
+        firstSign = Math.sign(this.value[i]);
+      }
+    }
+    if (!commonFactor) {
+      return;
+    }
+    for (let i = 0; i < this.value.length; ++i) {
+      this.value[i] *= firstSign / commonFactor;
+      if (Object.is(this.value[i], -0)) {
+        this.value[i] = 0;
+      }
+    }
+  }
+
+  // Only checks numerical equality, canonize your inputs beforehand
+  equals(other: Temperament) {
+    if (this.subgroup.length !== other.subgroup.length) {
+      return false;
+    }
+    for (let i = 0; i < this.subgroup.length; ++i) {
+      if (this.subgroup[i] !== other.subgroup[i]) {
+        return false;
+      }
+    }
+    for (let i = 0; i < this.value.length; ++i) {
+      if (this.value[i] !== other.value[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   toTenneyEuclid(metric_?: Metric): Mapping {
