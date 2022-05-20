@@ -317,4 +317,87 @@ describe('Temperament', () => {
       );
     }
   });
+
+  it('can figure out the period and a generator for meantone', () => {
+    const syntonicComma = fractionToMonzo(new Fraction(81, 80));
+    const temperament = Temperament.fromCommaList([syntonicComma]);
+    const [divisions, generator] = temperament.divisionsGenerator();
+
+    expect(divisions).toBe(1);
+    expect(generator.length).toBe(3);
+
+    const meantone = temperament.toPOTE();
+    const poteGenerator = 696.239;
+
+    // XXX: This is technically not the correct check. 1200 - poteGenerator is also valid.
+    expect(natsToCents(dot(meantone, generator)) % 1200).toBeCloseTo(
+      poteGenerator
+    );
+  });
+
+  it('can figure out the period and a generator for orgone', () => {
+    const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
+    const temperament = Temperament.fromCommaList([orgonisma]);
+    const [divisions, generator] = temperament.divisionsGenerator();
+
+    expect(divisions).toBe(1);
+    expect(generator.length).toBe(5);
+
+    const orgone = temperament.toPOTE();
+    const poteGenerator = 323.372;
+
+    // XXX: See?
+    expect(natsToCents(dot(orgone, generator)) % 1200).toBeCloseTo(
+      1200 - poteGenerator
+    );
+  });
+
+  it('can figure out the period and a generator for blackwood', () => {
+    const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
+    const subgroup = [0, 1, 2];
+    const temperament = Temperament.fromCommaList([limma], subgroup);
+    const [divisions, generator] = temperament.divisionsGenerator();
+
+    expect(divisions).toBe(5);
+    expect(generator.length).toBe(3);
+
+    const blackwood = temperament.toPOTE();
+    const poteGenerator = 399.594;
+    expect(natsToCents(dot(blackwood, generator)) % 240).toBeCloseTo(
+      poteGenerator % 240
+    );
+  });
+
+  it('can figure out the period and a generator for augmented', () => {
+    const diesis = fractionToMonzo(new Fraction(128, 125));
+    const subgroup = [0, 1, 2];
+    const temperament = Temperament.fromCommaList([diesis], subgroup);
+    const [divisions, generator] = temperament.divisionsGenerator();
+
+    expect(divisions).toBe(3);
+    expect(generator.length).toBe(3);
+
+    const augmented = temperament.toPOTE();
+    const poteGenerator = 706.638;
+    expect(natsToCents(dot(augmented, generator)) % 400).toBeCloseTo(
+      poteGenerator % 400
+    );
+  });
+
+  it('can figure out the period and a generator for miracle', () => {
+    const marvelComma = fractionToMonzo(new Fraction(225, 224));
+    const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
+    const temperament = Temperament.fromCommaList([marvelComma, gamelisma]);
+    const [divisions, generator] = temperament.divisionsGenerator();
+
+    expect(divisions).toBe(1);
+    expect(generator.length).toBe(4);
+
+    const miracle = temperament.toPOTE();
+    const poteGenerator = 116.675;
+
+    expect(natsToCents(dot(miracle, generator)) % 1200).toBeCloseTo(
+      1200 - poteGenerator
+    );
+  });
 });

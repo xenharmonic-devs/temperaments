@@ -33,6 +33,10 @@ export function div(a: number, b: number): number {
 // result.quotientA = div(a, gcd(a, b))
 // result.quotientB = div(b, gcd(a, b))
 export function extendedEuclid(a: number, b: number) {
+  if (isNaN(a) || isNaN(b)) {
+    throw new Error('Invalid input');
+  }
+
   let [rOld, r] = [a, b];
   let [sOld, s] = [1, 0];
   let [tOld, t] = [0, 1];

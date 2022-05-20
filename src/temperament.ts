@@ -1,7 +1,7 @@
 import type {Monzo} from './monzo';
 import Algebra = require('ganja.js');
 import {LOG_PRIMES} from './constants';
-import {gcd} from './utils';
+import {gcd, iteratedEuclid} from './utils';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];
@@ -207,6 +207,24 @@ export class Temperament {
     const purifier =
       LOG_PRIMES[indexOfEquivalence] / result[indexOfEquivalence];
     return result.map(component => component * purifier);
+  }
+
+  // Assumes this is canonized rank-2
+  divisionsGenerator(equaveIndex = 0) {
+    const algebraSize = 1 << this.subgroup.length;
+    const equaveUnit_ = Array(algebraSize).fill(0);
+    equaveUnit_[1 + equaveIndex] = 1;
+    const equaveUnit = new this.algebra(equaveUnit_);
+    const equaveProj = equaveUnit.Dot(this.value);
+    const generator = new this.algebra(iteratedEuclid(equaveProj));
+    const divisions = Math.abs(generator.Dot(equaveProj).s);
+
+    const superSize = this.subgroup.reduce((a, b) => Math.max(a, b)) + 1;
+    const result: [number, number[]] = [divisions, Array(superSize).fill(0)];
+    this.subgroup.forEach((index, i) => {
+      result[1][index] = generator[i + 1];
+    });
+    return result;
   }
 
   static fromValList(vals: Val[], subgroup_?: Subgroup) {
