@@ -227,6 +227,12 @@ export class Temperament {
     return result;
   }
 
+  rank2Prefix(): number[] {
+    return [
+      ...this.value.slice(1 + this.subgroup.length, 2 * this.subgroup.length),
+    ];
+  }
+
   static fromValList(vals: Val[], subgroup_?: Subgroup) {
     let subgroup: Subgroup = [];
     if (subgroup_ === undefined) {
@@ -284,5 +290,23 @@ export class Temperament {
       promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
       subgroup
     );
+  }
+
+  static recoverRank2(wedgiePrefix: number[], subgroup: Subgroup) {
+    const Clifford = Algebra(subgroup.length);
+    const algebraSize = 1 << subgroup.length;
+
+    const jip1 = new Clifford(Array(algebraSize).fill(0));
+    subgroup.forEach(
+      (index, i) => (jip1[1 + i] = LOG_PRIMES[index] / LOG_PRIMES[subgroup[0]])
+    );
+
+    const vector = Array(algebraSize).fill(0);
+    vector.splice(2, wedgiePrefix.length, ...wedgiePrefix);
+    const value = new Clifford(vector).Wedge(jip1);
+    for (let i = 0; i < algebraSize; ++i) {
+      value[i] = Math.round(value[i]);
+    }
+    return new Temperament(Clifford, value, subgroup);
   }
 }

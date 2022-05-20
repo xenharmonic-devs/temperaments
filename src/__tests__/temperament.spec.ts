@@ -400,4 +400,35 @@ describe('Temperament', () => {
       1200 - poteGenerator
     );
   });
+
+  it('can recover semaphore from its prefix', () => {
+    const diesis = fractionToMonzo(new Fraction(49, 48));
+    const temperament = Temperament.fromCommaList([diesis]);
+    temperament.canonize();
+    expect(temperament.subgroup.length).toBe(3);
+    const subgroup = [0, 1, 3];
+    const prefix = temperament.rank2Prefix();
+    expect(prefix.length).toBe(2);
+    expect(prefix[0]).toBe(2);
+    expect(prefix[1]).toBe(1);
+    const recovered = Temperament.recoverRank2(prefix, subgroup);
+    recovered.canonize();
+    expect(temperament.equals(recovered)).toBeTruthy();
+  });
+
+  it('can recover miracle from its prefix', () => {
+    const marvelComma = fractionToMonzo(new Fraction(225, 224));
+    const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
+    const temperament = Temperament.fromCommaList([marvelComma, gamelisma]);
+    temperament.canonize();
+    expect(temperament.subgroup.length).toBe(4);
+    const prefix = temperament.rank2Prefix();
+    expect(prefix.length).toBe(3);
+    expect(prefix[0]).toBe(6);
+    expect(prefix[1]).toBe(-7);
+    expect(prefix[2]).toBe(-2);
+    const recovered = Temperament.recoverRank2(prefix, temperament.subgroup);
+    recovered.canonize();
+    expect(temperament.equals(recovered)).toBeTruthy();
+  });
 });
