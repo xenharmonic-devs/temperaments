@@ -431,4 +431,19 @@ describe('Temperament', () => {
     recovered.canonize();
     expect(temperament.equals(recovered)).toBeTruthy();
   });
+
+  it('can recover augmented from its prefix', () => {
+    const diesis = fractionToMonzo(new Fraction(128, 125));
+    const subgroup = [0, 1, 2];
+    const temperament = Temperament.fromCommaList([diesis], subgroup);
+    temperament.canonize();
+    expect(temperament.subgroup.length).toBe(3);
+    const prefix = temperament.rank2Prefix();
+    expect(prefix.length).toBe(2);
+    expect(prefix[0]).toBe(3);
+    expect(prefix[1]).toBe(0);
+    const recovered = Temperament.recoverRank2(prefix, subgroup);
+    recovered.canonize();
+    expect(temperament.equals(recovered)).toBeTruthy();
+  });
 });

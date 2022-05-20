@@ -6,6 +6,9 @@
     "paths": {
       "*": ["./src/custom_types/*"],
     },
+    "strict": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": false,
   },
   "include": [
     "scripts/enumerate_temperaments.ts",

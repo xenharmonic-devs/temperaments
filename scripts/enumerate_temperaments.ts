@@ -6,7 +6,10 @@ import {
   natsToCents,
   gcd,
   monzosEqual,
+  getRank2Name,
 } from '../src/index';
+
+const subgroup = [0, 1, 2, 3];
 
 const temperaments: Temperament[] = [];
 
@@ -38,6 +41,35 @@ console.log(
   temperaments.length,
   'unique rank 2 temperaments in the subgroup 2.3.5.7 representable as a combination of two patent vals between 5 and 53 (inclusive).'
 );
+
+let allGood = true;
+temperaments.forEach(temperament => {
+  const prefix = temperament.rank2Prefix();
+  const recovered = Temperament.recoverRank2(prefix, subgroup);
+  recovered.canonize();
+  if (!temperament.equals(recovered)) {
+    allGood = false;
+    console.log('Unable to recover temperament');
+    console.log(temperament);
+  }
+});
+
+if (allGood) {
+  console.log('All of them recoverable from their prefixes.');
+}
+
+const names: string[] = [];
+temperaments.forEach(temperament => {
+  const name = getRank2Name(subgroup, temperament.rank2Prefix());
+  if (name !== undefined) {
+    names.push(name);
+  }
+});
+console.log('Found names for', names.length, 'of them.');
+console.log("Here's like ten:");
+names.slice(0, 10).forEach(name => {
+  console.log(name);
+});
 
 const commas = [];
 const N = 6;
@@ -78,7 +110,7 @@ console.log(
   commas.length,
   'commas <',
   maxCents,
-  'cents with off-twos component magintude <=',
+  'cents with off-twos component magnitude <=',
   N
 );
 
@@ -106,4 +138,26 @@ console.log(
   'Total of',
   temperaments.length,
   'unique rank 2 temperaments in the subgroup 2.3.5.7'
+);
+
+let numIrrecoverable = 0;
+let numNamed = 0;
+temperaments.forEach(temperament => {
+  const prefix = temperament.rank2Prefix();
+  const recovered = Temperament.recoverRank2(prefix, subgroup);
+  recovered.canonize();
+  if (!temperament.equals(recovered)) {
+    numIrrecoverable++;
+    return;
+  }
+
+  if (getRank2Name(subgroup, prefix) !== undefined) {
+    numNamed++;
+  }
+});
+console.log('Found names for', numNamed, 'of them.');
+console.log(
+  'There were',
+  numIrrecoverable,
+  "temperaments that couldn't be recovered from their prefixes."
 );
