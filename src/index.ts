@@ -28,13 +28,18 @@ import {Subgroup} from './temperament';
 let rawRank2Data: Object | undefined;
 
 export function getRank2Name(
-  subgroup: Subgroup,
+  subgroup: Subgroup | string,
   prefix: number[]
 ): string | undefined {
   if (rawRank2Data === undefined) {
     rawRank2Data = require('./resources/x31eqRank2.json');
   }
-  const subgroupString = subgroup.map(i => PRIMES[i]).join('.');
+  let subgroupString;
+  if (typeof subgroup === 'string') {
+    subgroupString = subgroup;
+  } else {
+    subgroupString = subgroup.map(i => PRIMES[i]).join('.');
+  }
   const key = prefix.join(',');
   const subgroupData =
     rawRank2Data![subgroupString as keyof typeof rawRank2Data];

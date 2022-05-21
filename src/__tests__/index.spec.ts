@@ -1,5 +1,6 @@
 import Fraction from 'fraction.js';
 import {describe, it, expect} from 'vitest';
+import {LOG_PRIMES} from '../constants';
 
 import {
   fractionToMonzoAndResidual,
@@ -8,6 +9,7 @@ import {
   Temperament,
 } from '../index';
 import {fractionToMonzo} from '../monzo';
+import {SubgroupTemperament} from '../temperament';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
@@ -33,6 +35,26 @@ describe('Temperament namer', () => {
     temperament.canonize();
     const prefix = temperament.rank2Prefix();
     expect(getRank2Name(subgroup, prefix)).toBe('Blackwood');
+  });
+
+  it('knows about fractional subgroup temperaments like haumea', () => {
+    const subgroup = '2.3.7/5.11/5.13/5';
+    const commas = [
+      [5, -3, 0, 1, -1],
+      [2, -3, 0, 0, 2],
+      [0, 0, 1, 2, -2],
+    ];
+    const jip = [
+      Math.LN2,
+      LOG_PRIMES[1],
+      LOG_PRIMES[3] - LOG_PRIMES[2],
+      LOG_PRIMES[4] - LOG_PRIMES[2],
+      LOG_PRIMES[5] - LOG_PRIMES[2],
+    ];
+    const temperament = SubgroupTemperament.fromCommaList(commas, jip);
+    temperament.canonize();
+    const prefix = temperament.rank2Prefix();
+    expect(getRank2Name(subgroup, prefix)).toBe('Haumea');
   });
 });
 
