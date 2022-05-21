@@ -1,7 +1,13 @@
 import Fraction from 'fraction.js';
 import {describe, it, expect} from 'vitest';
 
-import {fractionToMonzoAndResidual, getRank2Name, Temperament} from '../index';
+import {
+  fractionToMonzoAndResidual,
+  getCommaNames,
+  getRank2Name,
+  Temperament,
+} from '../index';
+import {fractionToMonzo} from '../monzo';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
@@ -27,5 +33,33 @@ describe('Temperament namer', () => {
     temperament.canonize();
     const prefix = temperament.rank2Prefix();
     expect(getRank2Name(subgroup, prefix)).toBe('Blackwood');
+  });
+});
+
+describe('Comma namer', () => {
+  it('knows about the syntonic comma', () => {
+    expect(getCommaNames([-4, 4, -1]).includes('syntonic comma')).toBeTruthy();
+  });
+
+  it('knows about the breedsma', () => {
+    expect(
+      getCommaNames(fractionToMonzo(new Fraction(2401, 2400))).includes(
+        'breedsma'
+      )
+    ).toBeTruthy();
+  });
+
+  it('knows about neutrino', () => {
+    expect(
+      getCommaNames([1889, -2145, 138, 424]).includes('neutrino')
+    ).toBeTruthy();
+  });
+
+  it("doesn't know about intervals larger than the octave", () => {
+    expect(getCommaNames([-2, 2]).length).toBe(0);
+  });
+
+  it("doesn't know about about this comma I just made up", () => {
+    expect(getCommaNames([1, 2, 3, 4, 5]).length).toBe(0);
   });
 });

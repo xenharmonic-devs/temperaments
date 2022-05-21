@@ -21,7 +21,8 @@ export {
   type Subgroup,
 } from './temperament';
 
-import {PRIMES} from './constants';
+import {LOG_PRIMES, PRIMES} from './constants';
+import {dot, Monzo} from './monzo';
 import {Subgroup} from './temperament';
 
 let rawRank2Data: Object | undefined;
@@ -41,4 +42,21 @@ export function getRank2Name(
     return undefined;
   }
   return subgroupData[key as keyof typeof subgroupData];
+}
+
+let rawCommaData: Object | undefined;
+
+export function getCommaNames(monzo: Monzo): string[] {
+  const size = dot(monzo, LOG_PRIMES);
+  if (Math.abs(size) >= Math.LN2) {
+    return [];
+  }
+  if (size < -1e-9) {
+    monzo = monzo.map(m => -m);
+  }
+  if (rawCommaData === undefined) {
+    rawCommaData = require('./resources/commas.json');
+  }
+  const key = monzo.slice(1).join(',');
+  return rawCommaData![key as keyof typeof rawCommaData] || [];
 }
