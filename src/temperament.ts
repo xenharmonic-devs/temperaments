@@ -104,17 +104,9 @@ export function fromWarts(
   return val;
 }
 
-// Musical temperament represented in Geometric Algebra
-export class Temperament {
+abstract class BaseTemperament {
   algebra: any; // Clifford Algebra
   value: any; // Multivector of the Clifford Algebra
-  subgroup: Subgroup;
-
-  constructor(algebra: any, value: any, subgroup: Subgroup) {
-    this.algebra = algebra;
-    this.value = value;
-    this.subgroup = subgroup;
-  }
 
   isNil() {
     for (let i = 0; i < this.value.length; ++i) {
@@ -126,11 +118,6 @@ export class Temperament {
   }
 
   canonize() {
-    for (let i = 0; i < this.subgroup.length - 1; ++i) {
-      if (this.subgroup[i] >= this.subgroup[i + 1]) {
-        throw new Error('Out of order subgroup');
-      }
-    }
     let firstSign = 0;
     let commonFactor = 0;
     for (let i = 0; i < this.value.length; ++i) {
@@ -151,6 +138,64 @@ export class Temperament {
   }
 
   // Only checks numerical equality, canonize your inputs beforehand
+  equals(other: BaseTemperament) {
+    if (this.value.length !== other.value.length) {
+      return false;
+    }
+
+    for (let i = 0; i < this.value.length; ++i) {
+      if (this.value[i] !== other.value[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  abstract toTenneyEuclid(metric_?: Metric): Mapping;
+  abstract toPOTE(metric?: Metric): Mapping;
+
+  get dimensions() {
+    return Math.round(Math.log(this.value.length) / Math.LN2);
+  }
+
+  // Assumes this is canonized rank-2
+  divisionsGenerator(): [number, Monzo] {
+    const equaveUnit = new this.algebra(Array(this.value.length).fill(0));
+    equaveUnit[1] = 1;
+    const equaveProj = equaveUnit.Dot(this.value);
+    const generator = new this.algebra(iteratedEuclid(equaveProj));
+    const divisions = Math.abs(generator.Dot(equaveProj).s);
+
+    return [divisions, [...generator.slice(1, this.dimensions + 1)]];
+  }
+
+  rank2Prefix(): number[] {
+    const dims = this.dimensions;
+    return [...this.value.slice(1 + dims, 2 * dims)];
+  }
+}
+
+// Musical temperament represented in Geometric Algebra
+export class Temperament extends BaseTemperament {
+  subgroup: Subgroup;
+
+  constructor(algebra: any, value: any, subgroup: Subgroup) {
+    super();
+    this.algebra = algebra;
+    this.value = value;
+    this.subgroup = subgroup;
+  }
+
+  canonize() {
+    for (let i = 0; i < this.subgroup.length - 1; ++i) {
+      if (this.subgroup[i] >= this.subgroup[i + 1]) {
+        throw new Error('Out of order subgroup');
+      }
+    }
+    super.canonize();
+  }
+
+  // Only checks numerical equality, canonize your inputs beforehand
   equals(other: Temperament) {
     if (this.subgroup.length !== other.subgroup.length) {
       return false;
@@ -160,12 +205,7 @@ export class Temperament {
         return false;
       }
     }
-    for (let i = 0; i < this.value.length; ++i) {
-      if (this.value[i] !== other.value[i]) {
-        return false;
-      }
-    }
-    return true;
+    return super.equals(other);
   }
 
   toTenneyEuclid(metric_?: Metric): Mapping {
@@ -210,27 +250,14 @@ export class Temperament {
   }
 
   // Assumes this is canonized rank-2
-  divisionsGenerator(equaveIndex = 0) {
-    const algebraSize = 1 << this.subgroup.length;
-    const equaveUnit_ = Array(algebraSize).fill(0);
-    equaveUnit_[1 + equaveIndex] = 1;
-    const equaveUnit = new this.algebra(equaveUnit_);
-    const equaveProj = equaveUnit.Dot(this.value);
-    const generator = new this.algebra(iteratedEuclid(equaveProj));
-    const divisions = Math.abs(generator.Dot(equaveProj).s);
-
+  divisionsGenerator(): [number, Monzo] {
+    const [d, subGenerator] = super.divisionsGenerator();
     const superSize = this.subgroup.reduce((a, b) => Math.max(a, b)) + 1;
-    const result: [number, number[]] = [divisions, Array(superSize).fill(0)];
+    const superGenerator = Array(superSize).fill(0);
     this.subgroup.forEach((index, i) => {
-      result[1][index] = generator[i + 1];
+      superGenerator[index] = subGenerator[i];
     });
-    return result;
-  }
-
-  rank2Prefix(): number[] {
-    return [
-      ...this.value.slice(1 + this.subgroup.length, 2 * this.subgroup.length),
-    ];
+    return [d, superGenerator];
   }
 
   static fromValList(vals: Val[], subgroup_?: Subgroup) {
@@ -312,44 +339,16 @@ export class Temperament {
 }
 
 // Fractional just intonation subgroup temperament represented in Geometric Algebra
-export class SubgroupTemperament {
+export class SubgroupTemperament extends BaseTemperament {
   algebra: any; // Clifford Algebra
   value: any; // Multivector of the Clifford Algebra
   jip: Mapping; // Just Intonation Point
 
   constructor(algebra: any, value: any, jip: any) {
+    super();
     this.algebra = algebra;
     this.value = value;
     this.jip = jip;
-  }
-
-  isNil() {
-    for (let i = 0; i < this.value.length; ++i) {
-      if (this.value[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  canonize() {
-    let firstSign = 0;
-    let commonFactor = 0;
-    for (let i = 0; i < this.value.length; ++i) {
-      commonFactor = gcd(commonFactor, Math.abs(this.value[i]));
-      if (!firstSign && this.value[i]) {
-        firstSign = Math.sign(this.value[i]);
-      }
-    }
-    if (!commonFactor) {
-      return;
-    }
-    for (let i = 0; i < this.value.length; ++i) {
-      this.value[i] *= firstSign / commonFactor;
-      if (Object.is(this.value[i], -0)) {
-        this.value[i] = 0;
-      }
-    }
   }
 
   // Only checks numerical equality, canonize your inputs beforehand
@@ -363,12 +362,7 @@ export class SubgroupTemperament {
         return false;
       }
     }
-    for (let i = 0; i < this.value.length; ++i) {
-      if (this.value[i] !== other.value[i]) {
-        return false;
-      }
-    }
-    return true;
+    return super.equals(other);
   }
 
   toTenneyEuclid(metric_?: Metric): Mapping {
@@ -401,21 +395,6 @@ export class SubgroupTemperament {
     const result = this.toTenneyEuclid(metric);
     const purifier = this.jip[0] / result[0];
     return result.map(component => component * purifier);
-  }
-
-  // Assumes this is canonized rank-2
-  divisionsGenerator(): [number, Monzo] {
-    const equaveUnit = new this.algebra(Array(this.value.length).fill(0));
-    equaveUnit[1] = 1;
-    const equaveProj = equaveUnit.Dot(this.value);
-    const generator = new this.algebra(iteratedEuclid(equaveProj));
-    const divisions = Math.abs(generator.Dot(equaveProj).s);
-
-    return [divisions, [...generator.slice(1, this.jip.length + 1)]];
-  }
-
-  rank2Prefix(): number[] {
-    return [...this.value.slice(1 + this.jip.length, 2 * this.jip.length)];
   }
 
   static fromValList(vals: Val[], jip: Mapping) {
