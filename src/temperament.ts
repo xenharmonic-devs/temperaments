@@ -310,3 +310,171 @@ export class Temperament {
     return new Temperament(Clifford, value, subgroup);
   }
 }
+
+// Fractional just intonation subgroup temperament represented in Geometric Algebra
+export class SubgroupTemperament {
+  algebra: any; // Clifford Algebra
+  value: any; // Multivector of the Clifford Algebra
+  jip: Mapping; // Just Intonation Point
+
+  constructor(algebra: any, value: any, jip: any) {
+    this.algebra = algebra;
+    this.value = value;
+    this.jip = jip;
+  }
+
+  isNil() {
+    for (let i = 0; i < this.value.length; ++i) {
+      if (this.value[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  canonize() {
+    let firstSign = 0;
+    let commonFactor = 0;
+    for (let i = 0; i < this.value.length; ++i) {
+      commonFactor = gcd(commonFactor, Math.abs(this.value[i]));
+      if (!firstSign && this.value[i]) {
+        firstSign = Math.sign(this.value[i]);
+      }
+    }
+    if (!commonFactor) {
+      return;
+    }
+    for (let i = 0; i < this.value.length; ++i) {
+      this.value[i] *= firstSign / commonFactor;
+      if (Object.is(this.value[i], -0)) {
+        this.value[i] = 0;
+      }
+    }
+  }
+
+  // Only checks numerical equality, canonize your inputs beforehand
+  equals(other: SubgroupTemperament) {
+    if (this.jip.length !== other.jip.length) {
+      return false;
+    }
+    for (let i = 0; i < this.jip.length; ++i) {
+      // XXX: This probably should be a check for closeness instead
+      if (this.jip[i] !== other.jip[i]) {
+        return false;
+      }
+    }
+    for (let i = 0; i < this.value.length; ++i) {
+      if (this.value[i] !== other.value[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  toTenneyEuclid(metric_?: Metric): Mapping {
+    const metric = metric_ === undefined ? this.jip.map(j => 1 / j) : metric_;
+
+    const jip = new this.algebra(Array(this.value.length).fill(0));
+    this.jip.forEach((j, i) => (jip[i + 1] = j * metric[i]));
+
+    const weightedValue_: number[] = [];
+    (this.algebra.describe().basis as string[]).forEach((label, index) => {
+      let component = this.value[index];
+      if (label[0] === 'e') {
+        label
+          .slice(1)
+          .split('')
+          .forEach(i => (component *= metric[parseInt(i) - 1]));
+      }
+      weightedValue_.push(component);
+    });
+    const weightedValue = new this.algebra(weightedValue_);
+
+    const projected = jip.Dot(weightedValue).Div(weightedValue);
+    for (let i = 0; i < metric.length; ++i) {
+      projected[i + 1] /= metric[i];
+    }
+    return [...projected.slice(1, 1 + metric.length)];
+  }
+
+  toPOTE(metric?: Metric): Mapping {
+    const result = this.toTenneyEuclid(metric);
+    const purifier = this.jip[0] / result[0];
+    return result.map(component => component * purifier);
+  }
+
+  // Assumes this is canonized rank-2
+  divisionsGenerator(): [number, Monzo] {
+    const equaveUnit = new this.algebra(Array(this.value.length).fill(0));
+    equaveUnit[1] = 1;
+    const equaveProj = equaveUnit.Dot(this.value);
+    const generator = new this.algebra(iteratedEuclid(equaveProj));
+    const divisions = Math.abs(generator.Dot(equaveProj).s);
+
+    return [divisions, [...generator.slice(1, this.jip.length + 1)]];
+  }
+
+  rank2Prefix(): number[] {
+    return [...this.value.slice(1 + this.jip.length, 2 * this.jip.length)];
+  }
+
+  static fromValList(vals: Val[], jip: Mapping) {
+    const Clifford = Algebra(jip.length);
+    const algebraSize = 1 << jip.length;
+
+    if (!vals.length) {
+      const scalar = new Clifford(Array(algebraSize).fill(0));
+      scalar[0] = 1;
+      return new SubgroupTemperament(Clifford, scalar, jip);
+    }
+    const promotedVals = vals.map(val => {
+      const vector = Array(algebraSize).fill(0);
+      vector.splice(1, val.length, ...val);
+      return new Clifford(vector);
+    });
+    return new SubgroupTemperament(
+      Clifford,
+      promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
+      jip
+    );
+  }
+
+  static fromCommaList(commas: Comma[], jip: Mapping) {
+    const Clifford = Algebra(jip.length);
+    const algebraSize = 1 << jip.length;
+
+    const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
+    pseudoScalar[algebraSize - 1] = 1;
+    if (!commas.length) {
+      return new SubgroupTemperament(Clifford, pseudoScalar, jip);
+    }
+
+    const promotedCommas = commas.map(comma => {
+      const vector = Array(algebraSize).fill(0);
+      vector.splice(1, comma.length, ...comma);
+      return new Clifford(vector).Mul(pseudoScalar);
+    });
+
+    return new SubgroupTemperament(
+      Clifford,
+      promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
+      jip
+    );
+  }
+
+  static recoverRank2(wedgiePrefix: number[], jip: Mapping) {
+    const Clifford = Algebra(jip.length);
+    const algebraSize = 1 << jip.length;
+
+    const jip1 = new Clifford(Array(algebraSize).fill(0));
+    jip.forEach((j, i) => (jip1[i + 1] = j / jip[0]));
+
+    const vector = Array(algebraSize).fill(0);
+    vector.splice(2, wedgiePrefix.length, ...wedgiePrefix);
+    const value = new Clifford(vector).Wedge(jip1);
+    for (let i = 0; i < algebraSize; ++i) {
+      value[i] = Math.round(value[i]);
+    }
+    return new SubgroupTemperament(Clifford, value, jip);
+  }
+}

@@ -8,7 +8,10 @@ import {
   natsToCents,
   patentVal,
   fromWarts,
+  SubgroupTemperament,
 } from '../temperament';
+import {LOG_PRIMES} from '../constants';
+import {mmod} from '../utils';
 
 describe('Temperament', () => {
   it('calculates meantone from vals', () => {
@@ -444,6 +447,53 @@ describe('Temperament', () => {
     expect(prefix[1]).toBe(0);
     const recovered = Temperament.recoverRank2(prefix, subgroup);
     recovered.canonize();
+    expect(temperament.equals(recovered)).toBeTruthy();
+  });
+});
+
+describe('Fractional Subgroup Temperament', () => {
+  it('calculates meantone from vals', () => {
+    const jip = LOG_PRIMES.slice(0, 3);
+    const edo12 = [12, 19, 28];
+    const edo19 = [19, 30, 44];
+    const temperament = SubgroupTemperament.fromValList([edo12, edo19], jip);
+    const meantone = temperament.toPOTE();
+
+    const syntonicComma = fractionToMonzo(new Fraction(81, 80));
+    const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 3)[0];
+    const octave = [1, 0, 0];
+
+    expect(dot(meantone, syntonicComma)).toBeCloseTo(0);
+    expect(dot(meantone, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
+  });
+
+  it('can handle a fractional JI subgroup such as 2.3.13/5 (barbados)', () => {
+    const monzo = fractionToMonzo(new Fraction(676, 675));
+    const islandComma = [monzo[0], monzo[1], monzo[5]];
+    const jip = [Math.LN2, LOG_PRIMES[1], LOG_PRIMES[5] - LOG_PRIMES[2]];
+    const temperament = SubgroupTemperament.fromCommaList([islandComma], jip);
+
+    const barbados = temperament.toPOTE();
+
+    const [d, g] = temperament.divisionsGenerator();
+
+    temperament.canonize();
+    const prefix = temperament.rank2Prefix();
+    const recovered = SubgroupTemperament.recoverRank2(prefix, jip);
+    recovered.canonize();
+
+    const genMonzo = fractionToMonzo(new Fraction(15, 13));
+    const semifourth = [genMonzo[0], genMonzo[1], genMonzo[5]];
+    const octave = [1, 0, 0];
+
+    expect(d).toBe(1);
+    expect(dot(barbados, islandComma)).toBeCloseTo(0);
+    expect(dot(barbados, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(barbados, semifourth))).toBeCloseTo(248.621);
+    expect(mmod(natsToCents(dot(barbados, g)), 1200)).toBeCloseTo(
+      1200 - 248.621
+    );
     expect(temperament.equals(recovered)).toBeTruthy();
   });
 });
