@@ -496,4 +496,35 @@ describe('Fractional Subgroup Temperament', () => {
     );
     expect(temperament.equals(recovered)).toBeTruthy();
   });
+
+  it('can handle a fractional non-orthogonal JI subgroup such as 2.3.13/5.19/5 (pinkan)', () => {
+    const islandComma_ = fractionToMonzo(new Fraction(676, 675));
+    const password_ = fractionToMonzo(new Fraction(1216, 1215));
+    const islandComma = [islandComma_[0], islandComma_[1], islandComma_[5], 0];
+    const password = [password_[0], password_[1], password_[5], password_[7]];
+    const jip = [
+      Math.LN2,
+      LOG_PRIMES[1],
+      LOG_PRIMES[5] - LOG_PRIMES[2],
+      LOG_PRIMES[7] - LOG_PRIMES[2],
+    ];
+    const temperament = SubgroupTemperament.fromCommaList(
+      [islandComma, password],
+      jip
+    );
+    const pinkan = temperament.toPOTE();
+
+    const [d, g] = temperament.divisionsGenerator();
+
+    const semifourth_ = fractionToMonzo(new Fraction(15, 13));
+    const semifourth = [semifourth_[0], semifourth_[1], semifourth_[5], 0];
+    const octave = [1, 0, 0, 0];
+
+    expect(d).toBe(1);
+    expect(dot(pinkan, islandComma)).toBeCloseTo(0);
+    expect(dot(pinkan, password)).toBeCloseTo(0);
+    expect(dot(pinkan, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(pinkan, semifourth))).toBeCloseTo(248.868);
+    expect(mmod(natsToCents(dot(pinkan, g)), 1200)).toBeCloseTo(1200 - 248.868);
+  });
 });
