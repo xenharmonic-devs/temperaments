@@ -211,10 +211,10 @@ export class Temperament extends BaseTemperament {
   toTenneyEuclid(metric_?: Metric): Mapping {
     const metric =
       metric_ === undefined ? inverseLogMetric(this.subgroup) : metric_;
-    const jip = this.subgroup.map((index, i) => LOG_PRIMES[index] * metric[i]);
-    const vector = Array(1 << this.subgroup.length).fill(0);
-    vector.splice(1, jip.length, ...jip);
-    const promotedJip = new this.algebra(vector);
+    const jip = new this.algebra(Array(this.value.length).fill(0));
+    this.subgroup.forEach(
+      (index, i) => (jip[i + 1] = LOG_PRIMES[index] * metric[i])
+    );
 
     const weightedValue_: number[] = [];
     (this.algebra.describe().basis as string[]).forEach((label, index) => {
@@ -229,7 +229,7 @@ export class Temperament extends BaseTemperament {
     });
     const weightedValue = new this.algebra(weightedValue_);
 
-    const projected = promotedJip.Dot(weightedValue).Div(weightedValue);
+    const projected = jip.Dot(weightedValue).Div(weightedValue);
 
     const result = LOG_PRIMES.slice(
       0,
@@ -277,9 +277,9 @@ export class Temperament extends BaseTemperament {
     const algebraSize = 1 << subgroup.length;
 
     if (!vals.length) {
-      const scalar = Array(algebraSize).fill(0);
+      const scalar = new Clifford(Array(algebraSize).fill(0));
       scalar[0] = 1;
-      return new Temperament(Clifford, new Clifford(scalar), subgroup);
+      return new Temperament(Clifford, scalar, subgroup);
     }
     const promotedVals = vals.map(val => {
       const vector = Array(algebraSize).fill(0);
@@ -300,9 +300,8 @@ export class Temperament extends BaseTemperament {
     const Clifford = Algebra(subgroup.length);
     const algebraSize = 1 << subgroup.length;
 
-    const pseudoScalar_ = Array(algebraSize).fill(0);
-    pseudoScalar_[algebraSize - 1] = 1;
-    const pseudoScalar = new Clifford(pseudoScalar_);
+    const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
+    pseudoScalar[algebraSize - 1] = 1;
     if (!commas.length) {
       return new Temperament(Clifford, pseudoScalar, subgroup);
     }
