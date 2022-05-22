@@ -1,5 +1,6 @@
 import type {Monzo} from './monzo';
 import Algebra = require('ganja.js');
+import {type Element} from 'ganja.js';
 import {LOG_PRIMES} from './constants';
 import {gcd, iteratedEuclid} from './utils';
 
@@ -105,8 +106,13 @@ export function fromWarts(
 }
 
 abstract class BaseTemperament {
-  algebra: any; // Clifford Algebra
-  value: any; // Multivector of the Clifford Algebra
+  algebra: typeof Element; // Clifford Algebra
+  value: Element; // Multivector of the Clifford Algebra
+
+  constructor(algebra: typeof Element, value: Element) {
+    this.algebra = algebra;
+    this.value = value;
+  }
 
   isNil() {
     for (let i = 0; i < this.value.length; ++i) {
@@ -163,7 +169,7 @@ abstract class BaseTemperament {
     const equaveUnit = new this.algebra(Array(this.value.length).fill(0));
     equaveUnit[1] = 1;
     const equaveProj = equaveUnit.Dot(this.value);
-    const generator = new this.algebra(iteratedEuclid(equaveProj));
+    const generator = new this.algebra(iteratedEuclid([...equaveProj]));
     const divisions = Math.abs(generator.Dot(equaveProj).s);
 
     return [divisions, [...generator.slice(1, this.dimensions + 1)]];
@@ -179,10 +185,8 @@ abstract class BaseTemperament {
 export class Temperament extends BaseTemperament {
   subgroup: Subgroup;
 
-  constructor(algebra: any, value: any, subgroup: Subgroup) {
-    super();
-    this.algebra = algebra;
-    this.value = value;
+  constructor(algebra: typeof Element, value: Element, subgroup: Subgroup) {
+    super(algebra, value);
     this.subgroup = subgroup;
   }
 
@@ -273,7 +277,7 @@ export class Temperament extends BaseTemperament {
       subgroup = subgroup_;
     }
 
-    const Clifford = Algebra(subgroup.length);
+    const Clifford: typeof Element = (Algebra as any)(subgroup.length);
     const algebraSize = 1 << subgroup.length;
 
     if (!vals.length) {
@@ -297,7 +301,7 @@ export class Temperament extends BaseTemperament {
     const subgroup =
       subgroup_ === undefined ? inferSubgroup(commas) : subgroup_;
 
-    const Clifford = Algebra(subgroup.length);
+    const Clifford: typeof Element = (Algebra as any)(subgroup.length);
     const algebraSize = 1 << subgroup.length;
 
     const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
@@ -319,7 +323,7 @@ export class Temperament extends BaseTemperament {
   }
 
   static recoverRank2(wedgiePrefix: number[], subgroup: Subgroup) {
-    const Clifford = Algebra(subgroup.length);
+    const Clifford: typeof Element = (Algebra as any)(subgroup.length);
     const algebraSize = 1 << subgroup.length;
 
     const jip1 = new Clifford(Array(algebraSize).fill(0));
@@ -339,14 +343,10 @@ export class Temperament extends BaseTemperament {
 
 // Fractional just intonation subgroup temperament represented in Geometric Algebra
 export class SubgroupTemperament extends BaseTemperament {
-  algebra: any; // Clifford Algebra
-  value: any; // Multivector of the Clifford Algebra
   jip: Mapping; // Just Intonation Point
 
-  constructor(algebra: any, value: any, jip: any) {
-    super();
-    this.algebra = algebra;
-    this.value = value;
+  constructor(algebra: typeof Element, value: Element, jip: any) {
+    super(algebra, value);
     this.jip = jip;
   }
 
@@ -397,7 +397,7 @@ export class SubgroupTemperament extends BaseTemperament {
   }
 
   static fromValList(vals: Val[], jip: Mapping) {
-    const Clifford = Algebra(jip.length);
+    const Clifford: typeof Element = (Algebra as any)(jip.length);
     const algebraSize = 1 << jip.length;
 
     if (!vals.length) {
@@ -418,7 +418,7 @@ export class SubgroupTemperament extends BaseTemperament {
   }
 
   static fromCommaList(commas: Comma[], jip: Mapping) {
-    const Clifford = Algebra(jip.length);
+    const Clifford: typeof Element = (Algebra as any)(jip.length);
     const algebraSize = 1 << jip.length;
 
     const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
@@ -441,7 +441,7 @@ export class SubgroupTemperament extends BaseTemperament {
   }
 
   static recoverRank2(wedgiePrefix: number[], jip: Mapping) {
-    const Clifford = Algebra(jip.length);
+    const Clifford: typeof Element = (Algebra as any)(jip.length);
     const algebraSize = 1 << jip.length;
 
     const jip1 = new Clifford(Array(algebraSize).fill(0));
