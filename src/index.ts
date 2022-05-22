@@ -32,7 +32,7 @@ export function getRank2Name(
   prefix: number[]
 ): string | undefined {
   if (rawRank2Data === undefined) {
-    rawRank2Data = require('./resources/x31eqRank2.json');
+    rawRank2Data = require('../resources/x31eqRank2.json');
   }
   let subgroupString;
   if (typeof subgroup === 'string') {
@@ -60,7 +60,7 @@ export function getCommaNames(monzo: Monzo): string[] {
     monzo = monzo.map(m => -m);
   }
   if (rawCommaData === undefined) {
-    rawCommaData = require('./resources/commas.json');
+    rawCommaData = require('../resources/commas.json');
   }
   const key = monzo.slice(1).join(',');
   return rawCommaData![key as keyof typeof rawCommaData] || [];
