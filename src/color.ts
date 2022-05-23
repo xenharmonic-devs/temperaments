@@ -1,5 +1,6 @@
 import {LOG_PRIMES, PRIMES} from './constants';
 import {dot, monzosEqual, type Monzo} from './monzo';
+import {Temperament} from './temperament';
 
 const PSEUDO_EDO_MAPPING = [7, 11, 16, 20, 24, 26, 29, 30, 32, 34, 37];
 
@@ -92,8 +93,22 @@ const LONG_FORMS_BY_LIMIT = [
   ['so', 'su'],
   ['no', 'nu'],
   ['twetho', 'twethu'],
-  ['twono', 'twenu'],
+  ['tweno', 'twenu'],
   ['thiwo', 'thiwu'],
+];
+
+const ALL_BY_LIMIT = [
+  'ca',
+  'wa',
+  'ya',
+  'za',
+  'la',
+  'tha',
+  'sa',
+  'na',
+  'twetha',
+  'twena',
+  'thiwa',
 ];
 
 const ABBREVIATIONS = {
@@ -444,21 +459,38 @@ export function monzoToColorComma(monzo: Monzo): string {
 
   let token = '';
   let numSyllables = 0;
+  let lastExponent = -1;
+  let biBackup = '';
   for (let i = offWhite.length - 1; i > 1; --i) {
     const exponent = Math.abs(offWhite[i]);
     if (!exponent) {
       continue;
     }
+    if (
+      ((token === biBackup && lastExponent > 1) || lastExponent > 2) &&
+      lastExponent !== exponent
+    ) {
+      token += '-a';
+    }
     const color = LONG_FORMS_BY_LIMIT[i][offWhite[i] > 0 ? 0 : 1];
     if (exponent === 2) {
-      token += color;
-      numSyllables++;
+      if (lastExponent === 2) {
+        token = biBackup;
+      } else {
+        biBackup = token + 'bi';
+        token += color;
+        numSyllables++;
+      }
     } else if (exponent > 2) {
-      token += numberToLongExponent(exponent);
-      numSyllables++; // XXX: Not exact
+      if (lastExponent !== exponent) {
+        token += numberToLongExponent(exponent);
+        numSyllables++; // XXX: Not exact
+      }
     }
     token += color;
+    biBackup += color;
     numSyllables++;
+    lastExponent = exponent;
   }
   if (!token.length) {
     token = 'wa';
@@ -495,4 +527,42 @@ export function monzoToColorComma(monzo: Monzo): string {
     token.slice(1) +
     numberToLongExponent(ordinal)
   );
+}
+
+// Get color name for a temperament of only one vanishing comma
+export function getSingleCommaName(temperament: Temperament) {
+  const commish = temperament.value.Dual;
+  const monzo: Monzo = Array(PSEUDO_EDO_MAPPING.length).fill(0);
+  temperament.subgroup.forEach((index, i) => {
+    if (index >= monzo.length) {
+      throw new Error('Subgroup too complex');
+    }
+    monzo[index] = commish[i + 1];
+  });
+  const nats = dot(LOG_PRIMES, monzo);
+  if (nats < 0) {
+    for (let i = 0; i < monzo.length; ++i) {
+      monzo[i] = -monzo[i];
+    }
+  }
+  let name = monzoToColorComma(monzo);
+
+  if (!temperament.subgroup.includes(1)) {
+    if (!temperament.subgroup.includes(0)) {
+      name += ' Nowaca';
+    } else {
+      name += ' Nowa';
+    }
+  } else if (!temperament.subgroup.includes(0)) {
+    name += ' Noca';
+  }
+
+  for (let i = temperament.subgroup.length - 1; i >= 0; --i) {
+    const limit = temperament.subgroup[i];
+    if (limit > 1 && monzo[limit] === 0) {
+      name += ' + ' + ALL_BY_LIMIT[limit];
+    }
+  }
+
+  return name;
 }
