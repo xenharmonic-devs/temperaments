@@ -8,12 +8,23 @@ export function monzosEqual(a: Monzo, b: Monzo) {
   if (a === b) {
     return true;
   }
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; ++i) {
+  for (let i = 0; i < Math.min(a.length, b.length); ++i) {
     if (a[i] !== b[i]) {
       return false;
+    }
+  }
+  if (a.length > b.length) {
+    for (let i = b.length; i < a.length; ++i) {
+      if (a[i]) {
+        return false;
+      }
+    }
+  }
+  if (b.length > a.length) {
+    for (let i = a.length; i < b.length; ++i) {
+      if (b[i]) {
+        return false;
+      }
     }
   }
   return true;

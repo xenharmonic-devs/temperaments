@@ -1,5 +1,5 @@
-import {LOG_PRIMES} from './constants';
-import {dot, type Monzo} from './monzo';
+import {LOG_PRIMES, PRIMES} from './constants';
+import {dot, monzosEqual, type Monzo} from './monzo';
 
 const PSEUDO_EDO_MAPPING = [7, 11, 16, 20, 24, 26, 29, 30, 32, 34, 37];
 
@@ -82,6 +82,20 @@ const LONG_FORMS = {
   thiwu: '31u',
 };
 
+const LONG_FORMS_BY_LIMIT = [
+  ['ca', 'ca'], // Placeholders to make this an array
+  ['wa', 'wa'], // ---
+  ['yo', 'gu'],
+  ['zo', 'ru'],
+  ['lo', 'lu'],
+  ['tho', 'thu'],
+  ['so', 'su'],
+  ['no', 'nu'],
+  ['twetho', 'twethu'],
+  ['twono', 'twenu'],
+  ['thiwo', 'thiwu'],
+];
+
 const ABBREVIATIONS = {
   y: [2, 1],
   g: [2, -1],
@@ -128,6 +142,63 @@ function parseExponent(token: string): [string, number] {
     }
   }
   return [token, num];
+}
+
+function numberToLongExponent(n: number) {
+  if (n === 1) {
+    return '';
+  }
+  if (n === 2) {
+    return 'bi';
+  }
+  if (n === 3) {
+    return 'tri';
+  }
+  if (n === 4) {
+    return 'quad';
+  }
+  if (n === 5) {
+    return 'quin';
+  }
+  if (n === 6) {
+    return 'tribi';
+  }
+  if (n === 7) {
+    return 'sep';
+  }
+  if (n === 11) {
+    return 'le';
+  }
+  if (n === 13) {
+    return 'the';
+  }
+  if (n === 17) {
+    return 'se';
+  }
+  if (n === 19) {
+    return 'ne';
+  }
+  if (n === 23) {
+    return 'twethe';
+  }
+  if (n <= 0) {
+    throw new Error('Can only convert positive numbers to long exponents');
+  }
+  let result = '';
+  while (n % 4 === 0) {
+    result += 'quad';
+    n /= 4;
+  }
+  for (let i = 11; i >= 0; --i) {
+    while (n % PRIMES[i] === 0) {
+      result += numberToLongExponent(PRIMES[i]);
+      n /= PRIMES[i];
+    }
+  }
+  if (n !== 1) {
+    throw new Error('Unable to reduce number to long exponents');
+  }
+  return result;
 }
 
 export class ColorInterval {
@@ -317,4 +388,96 @@ export function parseColorComma(token: string) {
 
   segment.sort((a, b) => a[0] - b[0]);
   return segment[ordinal - 1][1];
+}
+
+export function monzoToColorComma(monzo: Monzo): string {
+  if (monzo.length > PSEUDO_EDO_MAPPING.length) {
+    throw new Error('Too many components to represent in color notation');
+  }
+  const offWhite = [0, 0, ...monzo.slice(2)];
+  while (offWhite.length < PSEUDO_EDO_MAPPING.length) {
+    offWhite.push(0);
+  }
+  let magnitude = Math.round(monzo.slice(1).reduce((a, b) => a + b) / 7);
+  const segment: [number, Monzo][] = [];
+  let stepspan = -1;
+  while (true) {
+    const segmentMonzo = new ColorInterval(
+      stepspan,
+      magnitude,
+      offWhite
+    ).toMonzo();
+    const nats = dot(LOG_PRIMES, segmentMonzo);
+    if (nats < 0) {
+      break;
+    }
+    segment.push([nats, segmentMonzo]);
+    stepspan--;
+  }
+  stepspan = 0;
+  while (segment.length < 7) {
+    const segmentMonzo = new ColorInterval(
+      stepspan,
+      magnitude,
+      offWhite
+    ).toMonzo();
+    const nats = dot(LOG_PRIMES, segmentMonzo);
+    if (nats > 0) {
+      segment.push([nats, segmentMonzo]);
+    }
+    stepspan++;
+  }
+
+  segment.sort((a, b) => a[0] - b[0]);
+  let ordinal: number;
+  for (let i = 0; i < 7; ++i) {
+    const segmentMonzo = segment[i][1];
+    if (monzosEqual(monzo, segmentMonzo)) {
+      ordinal = i + 1;
+      break;
+    }
+  }
+
+  if (ordinal === undefined) {
+    throw new Error('Unable to locate segment');
+  }
+
+  let numSyllables = 0;
+  let token = '';
+  for (let i = offWhite.length - 1; i > 1; --i) {
+    const exponent = Math.abs(offWhite[i]);
+    if (!exponent) {
+      continue;
+    }
+    const color = LONG_FORMS_BY_LIMIT[i][offWhite[i] > 0 ? 0 : 1];
+    if (exponent === 2) {
+      token += color;
+      numSyllables++;
+    } else {
+      token += numberToLongExponent(exponent);
+      numSyllables++; // XXX: Not exact
+    }
+    token += color;
+    numSyllables++;
+  }
+  if (!token.length) {
+    token = 'wa';
+  }
+  if (Math.abs(magnitude) > 1 && numSyllables > 1) {
+    token = '-' + token;
+  }
+  while (magnitude > 0) {
+    token = 'la' + token;
+    magnitude--;
+  }
+  while (magnitude < 0) {
+    token = 'sa' + token;
+    magnitude++;
+  }
+
+  return (
+    token.charAt(0).toUpperCase() +
+    token.slice(1) +
+    numberToLongExponent(ordinal)
+  );
 }

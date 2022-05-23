@@ -2,7 +2,7 @@ import {arraysEqual} from '../utils';
 import Fraction from 'fraction.js';
 import {describe, it, expect, test} from 'vitest';
 
-import {ColorInterval, parseColorComma} from '../color';
+import {ColorInterval, monzoToColorComma, parseColorComma} from '../color';
 import {fractionToMonzoAndResidual} from '../monzo';
 
 describe('Color Notation intervals', () => {
@@ -95,7 +95,13 @@ const COMMAS = {
 describe('Color comma parser', () => {
   test.each(Object.entries(COMMAS))('parses %s correctly', (token, monzo) => {
     expect(
-      arraysEqual(parseColorComma(token, 11).slice(0, monzo.length), monzo)
+      arraysEqual(parseColorComma(token).slice(0, monzo.length), monzo)
     ).toBeTruthy();
+  });
+});
+
+describe('Monzo to color comma converter', () => {
+  test.each(Object.entries(COMMAS))('emits %s correctly', (token, monzo) => {
+    expect(monzoToColorComma(monzo)).toBe(token);
   });
 });
