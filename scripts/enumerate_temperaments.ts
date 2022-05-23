@@ -6,7 +6,7 @@ import {
   natsToCents,
   gcd,
   monzosEqual,
-  getRank2Name,
+  getRank2GivenName,
 } from '../src/index';
 
 const subgroup = [0, 1, 2, 3];
@@ -60,7 +60,7 @@ if (allGood) {
 
 const names: string[] = [];
 temperaments.forEach(temperament => {
-  const name = getRank2Name(subgroup, temperament.rank2Prefix());
+  const name = getRank2GivenName(temperament);
   if (name !== undefined) {
     names.push(name);
   }
@@ -151,7 +151,7 @@ temperaments.forEach(temperament => {
     return;
   }
 
-  if (getRank2Name(subgroup, prefix) !== undefined) {
+  if (getRank2GivenName(temperament) !== undefined) {
     numNamed++;
   }
 });

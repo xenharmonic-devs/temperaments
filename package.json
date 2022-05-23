@@ -45,7 +45,8 @@
     "pretest": "npm run build",
     "posttest": "npm run lint",
     "test": "vitest",
-    "enumerate": "node dist/scripts/enumerate_temperaments"
+    "enumerate": "node dist/scripts/enumerate_temperaments",
+    "check-redundant": "node dist/scripts/check_redundant_names"
   },
   "dependencies": {
     "fraction.js": "^4.2.0",

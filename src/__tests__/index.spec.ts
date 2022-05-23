@@ -5,7 +5,7 @@ import {LOG_PRIMES} from '../constants';
 import {
   fractionToMonzoAndResidual,
   getCommaNames,
-  getRank2Name,
+  getRank2GivenName,
   Temperament,
 } from '../index';
 import {fractionToMonzo} from '../monzo';
@@ -13,19 +13,27 @@ import {SubgroupTemperament} from '../temperament';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
-    expect(getRank2Name([0, 1, 2], [1, 4])).toBe('Meantone');
+    const temperament = Temperament.recoverRank2([1, 4], [0, 1, 2]);
+    temperament.canonize();
+    expect(getRank2GivenName(temperament)).toBe('Meantone');
   });
 
   it('knows about augmented', () => {
-    expect(getRank2Name([0, 1, 2], [3, 0])).toBe('Augmented');
+    const temperament = Temperament.recoverRank2([3, 0], [0, 1, 2]);
+    temperament.canonize();
+    expect(getRank2GivenName(temperament)).toBe('Augmented');
   });
 
   it('knows about semaphore', () => {
-    expect(getRank2Name([0, 1, 3], [2, 1])).toBe('Semaphore');
+    const temperament = Temperament.recoverRank2([2, 1], [0, 1, 3]);
+    temperament.canonize();
+    expect(getRank2GivenName(temperament)).toBe('Semaphore');
   });
 
   it('knows about miracle', () => {
-    expect(getRank2Name([0, 1, 2, 3], [6, -7, -2])).toBe('Miracle');
+    const temperament = Temperament.recoverRank2([6, -7, -2], [0, 1, 2, 3]);
+    temperament.canonize();
+    expect(getRank2GivenName(temperament)).toBe('Miracle');
   });
 
   it('knows about blackwood', () => {
@@ -33,8 +41,7 @@ describe('Temperament namer', () => {
     const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
     const temperament = Temperament.fromCommaList([limma], subgroup);
     temperament.canonize();
-    const prefix = temperament.rank2Prefix();
-    expect(getRank2Name(subgroup, prefix)).toBe('Blackwood');
+    expect(getRank2GivenName(temperament)).toBe('Blackwood');
   });
 
   it('knows about fractional subgroup temperaments like haumea', () => {
@@ -53,8 +60,7 @@ describe('Temperament namer', () => {
     ];
     const temperament = SubgroupTemperament.fromCommaList(commas, jip);
     temperament.canonize();
-    const prefix = temperament.rank2Prefix();
-    expect(getRank2Name(subgroup, prefix)).toBe('Haumea');
+    expect(getRank2GivenName(temperament, subgroup)).toBe('Haumea');
   });
 });
 

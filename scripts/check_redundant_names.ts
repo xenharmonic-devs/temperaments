@@ -1,5 +1,5 @@
 import {parseSubgroup, Temperament} from '../src/temperament';
-import {getSingleCommaName} from '../src/color';
+import {getSingleCommaColorName} from '../src/color';
 
 const rawRank2Data = require('../resources/x31eqRank2.json');
 
@@ -15,7 +15,7 @@ Object.entries(rawRank2Data).forEach(e => {
     const temperament = Temperament.recoverRank2(prefix, subgroup);
 
     try {
-      const colorName = getSingleCommaName(temperament);
+      const colorName = getSingleCommaColorName(temperament);
       if (colorName.toLowerCase() === name.toLowerCase()) {
         console.log(name);
       }

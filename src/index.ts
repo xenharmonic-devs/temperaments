@@ -21,24 +21,41 @@ export {
   type Subgroup,
 } from './temperament';
 
+import {getSingleCommaColorName} from './color';
 import {LOG_PRIMES, PRIMES} from './constants';
 import {dot, Monzo} from './monzo';
-import {Subgroup} from './temperament';
+import {SubgroupTemperament, Temperament} from './temperament';
 
 let rawRank2Data: Object | undefined;
 
-export function getRank2Name(
-  subgroup: Subgroup | string,
-  prefix: number[]
+export function getRank2GivenName(
+  temperament: Temperament | SubgroupTemperament,
+  subgroup?: string
 ): string | undefined {
+  const prefix = temperament.rank2Prefix();
+  let subgroupString: string;
+  if (temperament instanceof Temperament) {
+    const recovered = Temperament.recoverRank2(prefix, temperament.subgroup);
+    recovered.canonize();
+    if (!temperament.equals(recovered)) {
+      return undefined;
+    }
+    subgroupString = temperament.subgroup.map(i => PRIMES[i]).join('.');
+  } else {
+    if (subgroup === undefined) {
+      throw new Error(
+        'Need explicit subgroup string when parameter is a fractional subgroup temperament'
+      );
+    }
+    const recovered = SubgroupTemperament.recoverRank2(prefix, temperament.jip);
+    recovered.canonize();
+    if (!temperament.equals(recovered)) {
+      return undefined;
+    }
+    subgroupString = subgroup;
+  }
   if (rawRank2Data === undefined) {
     rawRank2Data = require('../resources/x31eqRank2.json');
-  }
-  let subgroupString;
-  if (typeof subgroup === 'string') {
-    subgroupString = subgroup;
-  } else {
-    subgroupString = subgroup.map(i => PRIMES[i]).join('.');
   }
   const key = prefix.join(',');
   const subgroupData =
@@ -47,6 +64,17 @@ export function getRank2Name(
     return undefined;
   }
   return subgroupData[key as keyof typeof subgroupData];
+}
+
+// Assumes the argument has been canonized
+export function getSingleCommaName(temperament: Temperament) {
+  // There should be enough guards in getRank2GivenName to avoid false positives even for rank 3
+  const given = getRank2GivenName(temperament);
+  let color: string | undefined = undefined;
+  try {
+    color = getSingleCommaColorName(temperament);
+  } catch {}
+  return {given, color};
 }
 
 let rawCommaData: Object | undefined;

@@ -530,7 +530,7 @@ export function monzoToColorComma(monzo: Monzo): string {
 }
 
 // Get color name for a temperament of only one vanishing comma
-export function getSingleCommaName(temperament: Temperament) {
+export function getSingleCommaColorName(temperament: Temperament) {
   const commish = temperament.value.Dual;
   const monzo: Monzo = Array(PSEUDO_EDO_MAPPING.length).fill(0);
   temperament.subgroup.forEach((index, i) => {
