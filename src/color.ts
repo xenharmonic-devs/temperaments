@@ -302,7 +302,7 @@ export class ColorInterval {
 export function parseColorComma(token: string) {
   token = token.toLowerCase().replace('-', '');
   let shortToken = '';
-  let exponent: null | string;
+  let exponent: null | string = null;
   let modified = true;
   let fresh = false;
   while (modified) {
@@ -398,7 +398,7 @@ export function monzoToColorComma(monzo: Monzo): string {
   while (offWhite.length < PSEUDO_EDO_MAPPING.length) {
     offWhite.push(0);
   }
-  let magnitude = Math.round(monzo.slice(1).reduce((a, b) => a + b) / 7);
+  const magnitude = Math.round(monzo.slice(1).reduce((a, b) => a + b) / 7);
   const segment: [number, Monzo][] = [];
   let stepspan = -1;
   while (true) {
@@ -429,7 +429,7 @@ export function monzoToColorComma(monzo: Monzo): string {
   }
 
   segment.sort((a, b) => a[0] - b[0]);
-  let ordinal: number;
+  let ordinal = -1;
   for (let i = 0; i < 7; ++i) {
     const segmentMonzo = segment[i][1];
     if (monzosEqual(monzo, segmentMonzo)) {
@@ -438,12 +438,12 @@ export function monzoToColorComma(monzo: Monzo): string {
     }
   }
 
-  if (ordinal === undefined) {
+  if (ordinal < 0) {
     throw new Error('Unable to locate segment');
   }
 
-  let numSyllables = 0;
   let token = '';
+  let numSyllables = 0;
   for (let i = offWhite.length - 1; i > 1; --i) {
     const exponent = Math.abs(offWhite[i]);
     if (!exponent) {
@@ -453,7 +453,7 @@ export function monzoToColorComma(monzo: Monzo): string {
     if (exponent === 2) {
       token += color;
       numSyllables++;
-    } else {
+    } else if (exponent > 2) {
       token += numberToLongExponent(exponent);
       numSyllables++; // XXX: Not exact
     }
@@ -462,17 +462,32 @@ export function monzoToColorComma(monzo: Monzo): string {
   }
   if (!token.length) {
     token = 'wa';
+    numSyllables = 1;
   }
   if (Math.abs(magnitude) > 1 && numSyllables > 1) {
     token = '-' + token;
   }
-  while (magnitude > 0) {
+  if (magnitude === 1) {
     token = 'la' + token;
-    magnitude--;
   }
-  while (magnitude < 0) {
+  if (magnitude === 2) {
+    token = 'lala' + token;
+  }
+  if (magnitude > 2) {
+    token = numberToLongExponent(magnitude) + 'la' + token;
+  }
+  if (magnitude === -1) {
     token = 'sa' + token;
-    magnitude++;
+  }
+  if (magnitude === -2) {
+    token = 'sasa' + token;
+  }
+  if (magnitude < -2) {
+    token = numberToLongExponent(-magnitude) + 'sa' + token;
+  }
+
+  if (['lo', 'lu', 'so', 'su', 'no', 'nu'].includes(token)) {
+    token = 'i' + token;
   }
 
   return (

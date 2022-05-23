@@ -19,6 +19,7 @@ export class Element extends Float32Array {
   Div(other: Element): Element;
 
   get s(): number;
+  get Dual(): Element;
 
   static describe(): Description;
 

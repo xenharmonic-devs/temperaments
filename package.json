@@ -37,7 +37,7 @@
   "scripts": {
     "build": "npm run compile && npm run copyfiles",
     "compile": "tsc",
-    "copyfiles": "cp -r ./resources ./dist/resources",
+    "copyfiles": "mkdir -p ./dist/resources && cp ./resources/* ./dist/resources",
     "lint": "gts lint",
     "clean": "gts clean",
     "fix": "gts fix",

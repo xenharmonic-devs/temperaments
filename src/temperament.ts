@@ -1,8 +1,9 @@
 import type {Monzo} from './monzo';
 import Algebra = require('ganja.js');
 import {type Element} from 'ganja.js';
-import {LOG_PRIMES} from './constants';
+import {LOG_PRIMES, PRIMES} from './constants';
 import {gcd, iteratedEuclid} from './utils';
+import Fraction from 'fraction.js';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];
@@ -18,6 +19,20 @@ export type Comma = number[];
 export type Metric = number[];
 
 export type Subgroup = number[];
+
+// Parse a subgroup like 2.3.7 to prime indices like [0, 1, 3]
+export function parseSubgroup(token: string) {
+  const subgroup = token.split('.').map(p => PRIMES.indexOf(parseInt(p)));
+  if (subgroup.includes(-1)) {
+    return undefined;
+  }
+  return subgroup;
+}
+
+// Parse a subgroup like 2.15.11/7 to a list of logarithms
+export function parseJIP(token: string) {
+  return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
+}
 
 export function inverseLogMetric(subgroup: Subgroup): Metric {
   return subgroup.map(index => 1 / LOG_PRIMES[index]);

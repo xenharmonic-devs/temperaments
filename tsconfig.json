@@ -12,6 +12,7 @@
     "module": "CommonJS"
   },
   "include": [
+    "scripts/check_redundant_names.ts",
     "scripts/enumerate_temperaments.ts",
     "src/index.ts"
   ]
