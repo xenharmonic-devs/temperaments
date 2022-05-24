@@ -410,11 +410,11 @@ describe('Temperament', () => {
     temperament.canonize();
     expect(temperament.subgroup.length).toBe(3);
     const subgroup = [0, 1, 3];
-    const prefix = temperament.rank2Prefix();
+    const prefix = temperament.rankPrefix(2);
     expect(prefix.length).toBe(2);
     expect(prefix[0]).toBe(2);
     expect(prefix[1]).toBe(1);
-    const recovered = Temperament.recoverRank2(prefix, subgroup);
+    const recovered = Temperament.fromPrefix(2, prefix, subgroup);
     recovered.canonize();
     expect(temperament.equals(recovered)).toBeTruthy();
   });
@@ -425,12 +425,12 @@ describe('Temperament', () => {
     const temperament = Temperament.fromCommaList([marvelComma, gamelisma]);
     temperament.canonize();
     expect(temperament.subgroup.length).toBe(4);
-    const prefix = temperament.rank2Prefix();
+    const prefix = temperament.rankPrefix(2);
     expect(prefix.length).toBe(3);
     expect(prefix[0]).toBe(6);
     expect(prefix[1]).toBe(-7);
     expect(prefix[2]).toBe(-2);
-    const recovered = Temperament.recoverRank2(prefix, temperament.subgroup);
+    const recovered = Temperament.fromPrefix(2, prefix, temperament.subgroup);
     recovered.canonize();
     expect(temperament.equals(recovered)).toBeTruthy();
   });
@@ -441,11 +441,21 @@ describe('Temperament', () => {
     const temperament = Temperament.fromCommaList([diesis], subgroup);
     temperament.canonize();
     expect(temperament.subgroup.length).toBe(3);
-    const prefix = temperament.rank2Prefix();
+    const prefix = temperament.rankPrefix(2);
     expect(prefix.length).toBe(2);
     expect(prefix[0]).toBe(3);
     expect(prefix[1]).toBe(0);
-    const recovered = Temperament.recoverRank2(prefix, subgroup);
+    const recovered = Temperament.fromPrefix(2, prefix, subgroup);
+    recovered.canonize();
+    expect(temperament.equals(recovered)).toBeTruthy();
+  });
+
+  it('calculates marvel rank 3 from its prefix', () => {
+    const comma = fractionToMonzo(new Fraction(225, 224));
+    const temperament = Temperament.fromCommaList([comma]);
+    temperament.canonize();
+    const prefix = temperament.rankPrefix(3);
+    const recovered = Temperament.fromPrefix(3, prefix, temperament.subgroup);
     recovered.canonize();
     expect(temperament.equals(recovered)).toBeTruthy();
   });
@@ -479,8 +489,8 @@ describe('Fractional Subgroup Temperament', () => {
     const [d, g] = temperament.divisionsGenerator();
 
     temperament.canonize();
-    const prefix = temperament.rank2Prefix();
-    const recovered = SubgroupTemperament.recoverRank2(prefix, jip);
+    const prefix = temperament.rankPrefix(2);
+    const recovered = SubgroupTemperament.fromPrefix(2, prefix, jip);
     recovered.canonize();
 
     const genMonzo = fractionToMonzo(new Fraction(15, 13));

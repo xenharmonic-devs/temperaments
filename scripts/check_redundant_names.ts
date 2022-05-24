@@ -12,7 +12,7 @@ Object.entries(rawRank2Data).forEach(e => {
   Object.entries(data as Object).forEach(entry => {
     const [prefixString, name] = entry;
     const prefix = prefixString.split(',').map(n => parseInt(n));
-    const temperament = Temperament.recoverRank2(prefix, subgroup);
+    const temperament = Temperament.fromPrefix(2, prefix, subgroup);
 
     try {
       const colorName = getSingleCommaColorName(temperament);

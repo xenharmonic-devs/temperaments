@@ -44,8 +44,8 @@ console.log(
 
 let allGood = true;
 temperaments.forEach(temperament => {
-  const prefix = temperament.rank2Prefix();
-  const recovered = Temperament.recoverRank2(prefix, subgroup);
+  const prefix = temperament.rankPrefix(2);
+  const recovered = Temperament.fromPrefix(2, prefix, subgroup);
   recovered.canonize();
   if (!temperament.equals(recovered)) {
     allGood = false;
@@ -143,8 +143,8 @@ console.log(
 let numIrrecoverable = 0;
 let numNamed = 0;
 temperaments.forEach(temperament => {
-  const prefix = temperament.rank2Prefix();
-  const recovered = Temperament.recoverRank2(prefix, subgroup);
+  const prefix = temperament.rankPrefix(2);
+  const recovered = Temperament.fromPrefix(2, prefix, subgroup);
   recovered.canonize();
   if (!temperament.equals(recovered)) {
     numIrrecoverable++;

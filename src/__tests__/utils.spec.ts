@@ -1,6 +1,14 @@
 import {describe, it, expect} from 'vitest';
 
-import {div, extendedEuclid, gcd, iteratedEuclid, lcm, mmod} from '../utils';
+import {
+  binomial,
+  div,
+  extendedEuclid,
+  gcd,
+  iteratedEuclid,
+  lcm,
+  mmod,
+} from '../utils';
 
 describe('gcd', () => {
   it('can find the greates common divisor of 12 and 15', () => {
@@ -47,5 +55,26 @@ describe('iterated (extended) Euclidean algorithm', () => {
         params.reduce(gcd)
       );
     }
+  });
+});
+
+describe('binomial coefficient', () => {
+  it('tells you how many ways you can pick d unique elements out of n', () => {
+    const n = 7;
+    const d = 3;
+    let numSubsets = 0;
+    // This is d levels deep
+    for (let i = 0; i < n; ++i) {
+      for (let j = i + 1; j < n; ++j) {
+        for (let k = j + 1; k < n; ++k) {
+          numSubsets++;
+        }
+      }
+    }
+    expect(numSubsets).toBe(binomial(n, d));
+  });
+
+  it('calculates 11 choose 7', () => {
+    expect(binomial(11, 7)).toBe(330);
   });
 });

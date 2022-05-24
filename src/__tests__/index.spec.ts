@@ -13,25 +13,25 @@ import {SubgroupTemperament} from '../temperament';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
-    const temperament = Temperament.recoverRank2([1, 4], [0, 1, 2]);
+    const temperament = Temperament.fromPrefix(2, [1, 4], [0, 1, 2]);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Meantone');
   });
 
   it('knows about augmented', () => {
-    const temperament = Temperament.recoverRank2([3, 0], [0, 1, 2]);
+    const temperament = Temperament.fromPrefix(2, [3, 0], [0, 1, 2]);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Augmented');
   });
 
   it('knows about semaphore', () => {
-    const temperament = Temperament.recoverRank2([2, 1], [0, 1, 3]);
+    const temperament = Temperament.fromPrefix(2, [2, 1], [0, 1, 3]);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Semaphore');
   });
 
   it('knows about miracle', () => {
-    const temperament = Temperament.recoverRank2([6, -7, -2], [0, 1, 2, 3]);
+    const temperament = Temperament.fromPrefix(2, [6, -7, -2], [0, 1, 2, 3]);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Miracle');
   });

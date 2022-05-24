@@ -2,7 +2,7 @@ import type {Monzo} from './monzo';
 import Algebra = require('ganja.js');
 import {type Element} from 'ganja.js';
 import {LOG_PRIMES, PRIMES} from './constants';
-import {gcd, iteratedEuclid} from './utils';
+import {binomial, gcd, iteratedEuclid} from './utils';
 import Fraction from 'fraction.js';
 
 // No interpretation in Geometric Algebra
@@ -190,9 +190,13 @@ abstract class BaseTemperament {
     return [divisions, [...generator.slice(1, this.dimensions + 1)]];
   }
 
-  rank2Prefix(): number[] {
+  rankPrefix(rank: number): number[] {
     const dims = this.dimensions;
-    return [...this.value.slice(1 + dims, 2 * dims)];
+    let start = 0;
+    for (let i = 0; i < rank; ++i) {
+      start += binomial(dims, i);
+    }
+    return [...this.value.slice(start, start + binomial(dims - 1, rank - 1))];
   }
 }
 
@@ -337,17 +341,27 @@ export class Temperament extends BaseTemperament {
     );
   }
 
-  static recoverRank2(wedgiePrefix: number[], subgroup: Subgroup) {
-    const Clifford: typeof Element = (Algebra as any)(subgroup.length);
-    const algebraSize = 1 << subgroup.length;
+  static fromPrefix(rank: number, wedgiePrefix: number[], subgroup: Subgroup) {
+    const dims = subgroup.length;
+    const Clifford: typeof Element = (Algebra as any)(dims);
+    const algebraSize = 1 << dims;
 
     const jip1 = new Clifford(Array(algebraSize).fill(0));
     subgroup.forEach(
       (index, i) => (jip1[1 + i] = LOG_PRIMES[index] / LOG_PRIMES[subgroup[0]])
     );
 
+    let end = 0;
+    for (let i = 0; i < rank; ++i) {
+      end += binomial(dims, i);
+    }
+
     const vector = Array(algebraSize).fill(0);
-    vector.splice(2, wedgiePrefix.length, ...wedgiePrefix);
+    vector.splice(
+      end - wedgiePrefix.length,
+      wedgiePrefix.length,
+      ...wedgiePrefix
+    );
     const value = new Clifford(vector).Wedge(jip1);
     for (let i = 0; i < algebraSize; ++i) {
       value[i] = Math.round(value[i]);
@@ -455,15 +469,25 @@ export class SubgroupTemperament extends BaseTemperament {
     );
   }
 
-  static recoverRank2(wedgiePrefix: number[], jip: Mapping) {
-    const Clifford: typeof Element = (Algebra as any)(jip.length);
-    const algebraSize = 1 << jip.length;
+  static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
+    const dims = jip.length;
+    const Clifford: typeof Element = (Algebra as any)(dims);
+    const algebraSize = 1 << dims;
 
     const jip1 = new Clifford(Array(algebraSize).fill(0));
     jip.forEach((j, i) => (jip1[i + 1] = j / jip[0]));
 
+    let end = 0;
+    for (let i = 0; i < rank; ++i) {
+      end += binomial(dims, i);
+    }
+
     const vector = Array(algebraSize).fill(0);
-    vector.splice(2, wedgiePrefix.length, ...wedgiePrefix);
+    vector.splice(
+      end - wedgiePrefix.length,
+      wedgiePrefix.length,
+      ...wedgiePrefix
+    );
     const value = new Clifford(vector).Wedge(jip1);
     for (let i = 0; i < algebraSize; ++i) {
       value[i] = Math.round(value[i]);

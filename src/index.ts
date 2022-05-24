@@ -32,10 +32,10 @@ export function getRank2GivenName(
   temperament: Temperament | SubgroupTemperament,
   subgroup?: string
 ): string | undefined {
-  const prefix = temperament.rank2Prefix();
+  const prefix = temperament.rankPrefix(2);
   let subgroupString: string;
   if (temperament instanceof Temperament) {
-    const recovered = Temperament.recoverRank2(prefix, temperament.subgroup);
+    const recovered = Temperament.fromPrefix(2, prefix, temperament.subgroup);
     recovered.canonize();
     if (!temperament.equals(recovered)) {
       return undefined;
@@ -47,7 +47,11 @@ export function getRank2GivenName(
         'Need explicit subgroup string when parameter is a fractional subgroup temperament'
       );
     }
-    const recovered = SubgroupTemperament.recoverRank2(prefix, temperament.jip);
+    const recovered = SubgroupTemperament.fromPrefix(
+      2,
+      prefix,
+      temperament.jip
+    );
     recovered.canonize();
     if (!temperament.equals(recovered)) {
       return undefined;

@@ -90,3 +90,32 @@ export function iteratedEuclid(params: number[]) {
   }
   return coefs;
 }
+
+// https://stackoverflow.com/a/37716142
+// step 1: a basic LUT with a few steps of Pascal's triangle
+const BINOMIALS = [
+  [1],
+  [1, 1],
+  [1, 2, 1],
+  [1, 3, 3, 1],
+  [1, 4, 6, 4, 1],
+  [1, 5, 10, 10, 5, 1],
+  [1, 6, 15, 20, 15, 6, 1],
+  [1, 7, 21, 35, 35, 21, 7, 1],
+  [1, 8, 28, 56, 70, 56, 28, 8, 1],
+];
+
+// step 2: a function that builds out the LUT if it needs to.
+export function binomial(n: number, k: number) {
+  while (n >= BINOMIALS.length) {
+    const s = BINOMIALS.length;
+    const lastRow = BINOMIALS[s - 1];
+    const nextRow = [1];
+    for (let i = 1; i < s; i++) {
+      nextRow.push(lastRow[i - 1] + lastRow[i]);
+    }
+    nextRow.push(1);
+    BINOMIALS.push(nextRow);
+  }
+  return BINOMIALS[n][k];
+}
