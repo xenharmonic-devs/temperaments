@@ -91,15 +91,16 @@ function isDigit(character: string) {
 
 export function fromWarts(
   token: string,
-  equave: number,
-  numberOfComponents: number
-) {
+  numberOfComponents: number,
+  equave = 2
+): Val {
   let numString = '';
   while (isDigit(token[0])) {
     numString += token[0];
     token = token.slice(1);
   }
   const divisions = parseInt(numString);
+  const divisionsPerLogEquave = divisions / Math.log(equave);
   const val = patentVal(divisions, equave, numberOfComponents);
   const warts = token
     .toLowerCase()
@@ -110,14 +111,41 @@ export function fromWarts(
     counts.set(index, (counts.get(index) || 0) + 1);
   });
   for (const [index, count] of counts) {
+    if (index >= numberOfComponents) {
+      throw new Error('Too few components to include all warts');
+    }
     const modification = Math.floor((count + 1) / 2) * (2 * (count % 2) - 1);
-    if (val[index] > LOG_PRIMES[index]) {
-      val[index] -= modification;
-    } else {
+    if (LOG_PRIMES[index] * divisionsPerLogEquave > val[index]) {
       val[index] += modification;
+    } else {
+      val[index] -= modification;
     }
   }
   return val;
+}
+
+export function toWarts(val: Val, equave = 2) {
+  const divisions = val[PRIMES.indexOf(equave)];
+  const divisionsPerLogEquave = divisions / Math.log(equave);
+  const patent = patentVal(divisions, equave, val.length);
+  let result = divisions.toString();
+  for (let index = 0; index < val.length; ++index) {
+    const modification = val[index] - patent[index];
+    let count = 2 * Math.abs(modification);
+    if (LOG_PRIMES[index] * divisionsPerLogEquave > patent[index]) {
+      if (modification > 0) {
+        count--;
+      }
+    } else {
+      if (modification < 0) {
+        count--;
+      }
+    }
+    for (let i = 0; i < count; ++i) {
+      result += String.fromCharCode(97 + index);
+    }
+  }
+  return result;
 }
 
 abstract class BaseTemperament {
