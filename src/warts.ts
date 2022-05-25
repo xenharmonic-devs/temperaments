@@ -1,3 +1,5 @@
+import {LOG_PRIMES} from './constants';
+
 const DIGIT_PATTERN = new RegExp('\\d');
 
 function isDigit(character: string) {
@@ -32,12 +34,23 @@ export function toDivisionsModifications(
   return [divisions, modifications];
 }
 
-export function patentVal(divisions: number, jip: number[]) {
+type MaybeJip = number[] | number;
+
+function actuallyJip(jipOrNumberOfPrimes: number[] | number) {
+  if (typeof jipOrNumberOfPrimes === 'number') {
+    return LOG_PRIMES.slice(0, jipOrNumberOfPrimes);
+  }
+  return jipOrNumberOfPrimes;
+}
+
+export function patentVal(divisions: number, jip_: MaybeJip) {
+  const jip = actuallyJip(jip_);
   const divisionsPerLogEquave = divisions / jip[0];
   return jip.map(logBasis => Math.round(logBasis * divisionsPerLogEquave));
 }
 
-export function fromWarts(token: number | string, jip: number[]) {
+export function fromWarts(token: number | string, jip_: MaybeJip) {
+  const jip = actuallyJip(jip_);
   const [divisions, modifications] = toDivisionsModifications(token);
   const divisionsPerLogEquave = divisions / jip[0];
   const result = patentVal(divisions, jip);
@@ -52,7 +65,8 @@ export function fromWarts(token: number | string, jip: number[]) {
   return result;
 }
 
-export function toWarts(val: number[], jip: number[]) {
+export function toWarts(val: number[], jip_?: MaybeJip) {
+  const jip = actuallyJip(jip_ || val.length);
   const divisions = val[0];
   const divisionsPerLogEquave = divisions / jip[0];
   const patent = patentVal(divisions, jip);

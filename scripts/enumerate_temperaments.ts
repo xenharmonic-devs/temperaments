@@ -16,9 +16,9 @@ const temperaments: Temperament[] = [];
 const minEdo = 5;
 const maxEdo = 53;
 for (let a = minEdo; a <= maxEdo; ++a) {
-  const valA = patentVal(a, 2, 4);
+  const valA = patentVal(a, 4);
   for (let b = a + 1; b <= maxEdo; ++b) {
-    const valB = patentVal(b, 2, 4);
+    const valB = patentVal(b, 4);
     const temperament = Temperament.fromValList([valA, valB]);
     if (temperament.isNil()) {
       continue;

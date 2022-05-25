@@ -15,11 +15,10 @@ export {
   natsToCents,
   centsToNats,
   inferSubgroup,
-  patentVal,
-  fromWarts,
   PrimeTemperament as Temperament,
   type PrimeSubgroup as Subgroup,
 } from './temperament';
+export {patentVal} from './warts';
 
 import {getSingleCommaColorName} from './color';
 import {LOG_PRIMES, PRIMES} from './constants';
