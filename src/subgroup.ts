@@ -1,6 +1,7 @@
 import Fraction, {NumeratorDenominator} from 'fraction.js';
-import {PRIMES} from './constants';
-import {fractionToMonzo, type Monzo} from './monzo';
+import {flatten, lusolve} from 'mathjs';
+import {LOG_PRIMES, PRIMES} from './constants';
+import {dot, fractionToMonzo, type Monzo} from './monzo';
 import {fromWarts, patentVal, toWarts} from './warts';
 
 export type Basis = Fraction[];
@@ -45,7 +46,7 @@ export class Subgroup {
   }
 
   // Please note that this assumes that the basis is somewhat regular.
-  // The general solution would require doing Gauss-Jordan elimination.
+  // The general solution would require doing Gauss-Jordan elimination over Fractions.
   toMonzoAndResidual(
     firstValue: FractionValue,
     secondValue?: number
@@ -85,6 +86,64 @@ export class Subgroup {
     return toWarts(val, this.jip());
   }
 
+  toPrimeMapping(mapping_: number[]) {
+    const basisMonzos = this.basis.map(b => fractionToMonzo(b));
+    const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
+
+    // Check if prime power subgroup
+    let simple = true;
+    const simpleIndices = [];
+    for (let i = 0; i < basisMonzos.length; ++i) {
+      let numNonzero = 0;
+      for (let j = 0; j < basisMonzos[i].length; ++j) {
+        if (basisMonzos[i][j]) {
+          if (numNonzero) {
+            simple = false;
+            break;
+          }
+          simpleIndices.push(j);
+          numNonzero++;
+        }
+      }
+      if (!simple) {
+        break;
+      }
+    }
+    if (simple) {
+      const result = LOG_PRIMES.slice(0, limit);
+      simpleIndices.forEach(
+        (index, i) => (result[index] = mapping_[i] / basisMonzos[i][index])
+      );
+      return result;
+    }
+
+    // Calculate the full matrix and solve BasisMatrix * result = mapping_
+    const missing = new Set<number>();
+    for (let i = 0; i < limit; ++i) {
+      missing.add(i);
+    }
+    basisMonzos.forEach(monzo => {
+      monzo.forEach((component, j) => {
+        if (component > 0) {
+          missing.delete(j);
+        }
+      });
+      while (monzo.length < limit) {
+        monzo.push(0);
+      }
+    });
+    for (const index of missing) {
+      const extraBasis = Array(limit).fill(0);
+      extraBasis[index] = 1;
+      basisMonzos.push(extraBasis);
+    }
+    const mapping = [...mapping_];
+    while (mapping.length < limit) {
+      mapping.push(dot(basisMonzos[mapping.length], LOG_PRIMES));
+    }
+    return flatten(lusolve(basisMonzos, mapping));
+  }
+
   static inferPrimeSubgroup(commas: (Monzo | FractionValue)[]) {
     const monzos: Monzo[] = [];
     commas.forEach(comma => {
@@ -108,5 +167,10 @@ export class Subgroup {
     const indices = [...primeIndices];
     indices.sort((a, b) => a - b);
     return new Subgroup(indices.map(i => PRIMES[i]));
+  }
+
+  // This should be used to strip monzos after infering prime subgroup
+  strip(comma: Monzo) {
+    return this.basis.map(b => comma[PRIMES.indexOf(b.n)]);
   }
 }

@@ -9,7 +9,7 @@ import {
   Temperament,
 } from '../index';
 import {fractionToMonzo} from '../monzo';
-import {SubgroupTemperament} from '../temperament';
+import {FreeTemperament} from '../temperament';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
@@ -58,7 +58,7 @@ describe('Temperament namer', () => {
       LOG_PRIMES[4] - LOG_PRIMES[2],
       LOG_PRIMES[5] - LOG_PRIMES[2],
     ];
-    const temperament = SubgroupTemperament.fromCommaList(commas, jip);
+    const temperament = FreeTemperament.fromCommaList(commas, jip);
     temperament.canonize();
     expect(getRank2GivenName(temperament, subgroup)).toBe('Haumea');
   });

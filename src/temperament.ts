@@ -4,6 +4,7 @@ import {type Element} from 'ganja.js';
 import {LOG_PRIMES, PRIMES} from './constants';
 import {binomial, gcd, iteratedEuclid} from './utils';
 import Fraction from 'fraction.js';
+import {Subgroup, SubgroupValue, FractionValue} from './subgroup';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];
@@ -18,7 +19,7 @@ export type Comma = number[];
 // I think ganja.js ignores metric magnitude so we pre- and post-process
 export type Metric = number[];
 
-export type Subgroup = number[];
+export type PrimeSubgroup = number[];
 
 // Parse a subgroup like 2.3.7 to prime indices like [0, 1, 3]
 export function parseSubgroup(token: string) {
@@ -34,13 +35,13 @@ export function parseJIP(token: string) {
   return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
 }
 
-export function inverseLogMetric(subgroup: Subgroup): Metric {
+export function inverseLogMetric(subgroup: PrimeSubgroup): Metric {
   return subgroup.map(index => 1 / LOG_PRIMES[index]);
 }
 
-export function flatMetric(subgroup: Subgroup): Metric;
+export function flatMetric(subgroup: PrimeSubgroup): Metric;
 export function flatMetric(subgroupSize: number): Metric;
-export function flatMetric(subgroupOrSize: number | Subgroup) {
+export function flatMetric(subgroupOrSize: number | PrimeSubgroup) {
   if (typeof subgroupOrSize === 'number') {
     return Array(subgroupOrSize).fill(1);
   }
@@ -55,8 +56,8 @@ export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
 }
 
-export function inferSubgroup(monzos: Monzo[]): Subgroup {
-  const result: Subgroup = [];
+export function inferSubgroup(monzos: Monzo[]): PrimeSubgroup {
+  const result: PrimeSubgroup = [];
   if (!monzos.length) {
     return result;
   }
@@ -200,8 +201,8 @@ abstract class BaseTemperament {
     return true;
   }
 
-  abstract toTenneyEuclid(metric_?: Metric): Mapping;
-  abstract toPOTE(metric?: Metric): Mapping;
+  // abstract toTenneyEuclid(metric_?: Metric): Mapping;
+  // abstract toPOTE(metric?: Metric): Mapping;
 
   get dimensions() {
     return Math.round(Math.log(this.value.length) / Math.LN2);
@@ -229,10 +230,14 @@ abstract class BaseTemperament {
 }
 
 // Musical temperament represented in Geometric Algebra
-export class Temperament extends BaseTemperament {
-  subgroup: Subgroup;
+export class PrimeTemperament extends BaseTemperament {
+  subgroup: PrimeSubgroup;
 
-  constructor(algebra: typeof Element, value: Element, subgroup: Subgroup) {
+  constructor(
+    algebra: typeof Element,
+    value: Element,
+    subgroup: PrimeSubgroup
+  ) {
     super(algebra, value);
     this.subgroup = subgroup;
   }
@@ -247,7 +252,7 @@ export class Temperament extends BaseTemperament {
   }
 
   // Only checks numerical equality, canonize your inputs beforehand
-  equals(other: Temperament) {
+  equals(other: PrimeTemperament) {
     if (this.subgroup.length !== other.subgroup.length) {
       return false;
     }
@@ -311,8 +316,8 @@ export class Temperament extends BaseTemperament {
     return [d, superGenerator];
   }
 
-  static fromValList(vals: Val[], subgroup_?: Subgroup) {
-    let subgroup: Subgroup = [];
+  static fromValList(vals: Val[], subgroup_?: PrimeSubgroup) {
+    let subgroup: PrimeSubgroup = [];
     if (subgroup_ === undefined) {
       if (!vals.length) {
         throw new Error('No vals or subgroup given');
@@ -330,21 +335,21 @@ export class Temperament extends BaseTemperament {
     if (!vals.length) {
       const scalar = new Clifford(Array(algebraSize).fill(0));
       scalar[0] = 1;
-      return new Temperament(Clifford, scalar, subgroup);
+      return new PrimeTemperament(Clifford, scalar, subgroup);
     }
     const promotedVals = vals.map(val => {
       const vector = Array(algebraSize).fill(0);
       vector.splice(1, subgroup.length, ...subgroup.map(index => val[index]));
       return new Clifford(vector);
     });
-    return new Temperament(
+    return new PrimeTemperament(
       Clifford,
       promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
       subgroup
     );
   }
 
-  static fromCommaList(commas: Comma[], subgroup_?: Subgroup) {
+  static fromCommaList(commas: Comma[], subgroup_?: PrimeSubgroup) {
     const subgroup =
       subgroup_ === undefined ? inferSubgroup(commas) : subgroup_;
 
@@ -354,7 +359,7 @@ export class Temperament extends BaseTemperament {
     const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
     pseudoScalar[algebraSize - 1] = 1;
     if (!commas.length) {
-      return new Temperament(Clifford, pseudoScalar, subgroup);
+      return new PrimeTemperament(Clifford, pseudoScalar, subgroup);
     }
 
     const promotedCommas = commas.map(comma => {
@@ -362,14 +367,18 @@ export class Temperament extends BaseTemperament {
       vector.splice(1, subgroup.length, ...subgroup.map(index => comma[index]));
       return new Clifford(vector).Mul(pseudoScalar);
     });
-    return new Temperament(
+    return new PrimeTemperament(
       Clifford,
       promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
       subgroup
     );
   }
 
-  static fromPrefix(rank: number, wedgiePrefix: number[], subgroup: Subgroup) {
+  static fromPrefix(
+    rank: number,
+    wedgiePrefix: number[],
+    subgroup: PrimeSubgroup
+  ) {
     const dims = subgroup.length;
     const Clifford: typeof Element = (Algebra as any)(dims);
     const algebraSize = 1 << dims;
@@ -394,12 +403,12 @@ export class Temperament extends BaseTemperament {
     for (let i = 0; i < algebraSize; ++i) {
       value[i] = Math.round(value[i]);
     }
-    return new Temperament(Clifford, value, subgroup);
+    return new PrimeTemperament(Clifford, value, subgroup);
   }
 }
 
-// Fractional just intonation subgroup temperament represented in Geometric Algebra
-export class SubgroupTemperament extends BaseTemperament {
+// Temperament with an arbitrary basis represented in Geometric Algebra
+export class FreeTemperament extends BaseTemperament {
   jip: Mapping; // Just Intonation Point
 
   constructor(algebra: typeof Element, value: Element, jip: any) {
@@ -408,7 +417,7 @@ export class SubgroupTemperament extends BaseTemperament {
   }
 
   // Only checks numerical equality, canonize your inputs beforehand
-  equals(other: SubgroupTemperament) {
+  equals(other: FreeTemperament) {
     if (this.jip.length !== other.jip.length) {
       return false;
     }
@@ -460,14 +469,14 @@ export class SubgroupTemperament extends BaseTemperament {
     if (!vals.length) {
       const scalar = new Clifford(Array(algebraSize).fill(0));
       scalar[0] = 1;
-      return new SubgroupTemperament(Clifford, scalar, jip);
+      return new FreeTemperament(Clifford, scalar, jip);
     }
     const promotedVals = vals.map(val => {
       const vector = Array(algebraSize).fill(0);
       vector.splice(1, val.length, ...val);
       return new Clifford(vector);
     });
-    return new SubgroupTemperament(
+    return new FreeTemperament(
       Clifford,
       promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
       jip
@@ -481,7 +490,7 @@ export class SubgroupTemperament extends BaseTemperament {
     const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
     pseudoScalar[algebraSize - 1] = 1;
     if (!commas.length) {
-      return new SubgroupTemperament(Clifford, pseudoScalar, jip);
+      return new FreeTemperament(Clifford, pseudoScalar, jip);
     }
 
     const promotedCommas = commas.map(comma => {
@@ -490,7 +499,7 @@ export class SubgroupTemperament extends BaseTemperament {
       return new Clifford(vector).Mul(pseudoScalar);
     });
 
-    return new SubgroupTemperament(
+    return new FreeTemperament(
       Clifford,
       promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
       jip
@@ -520,6 +529,180 @@ export class SubgroupTemperament extends BaseTemperament {
     for (let i = 0; i < algebraSize; ++i) {
       value[i] = Math.round(value[i]);
     }
-    return new SubgroupTemperament(Clifford, value, jip);
+    return new FreeTemperament(Clifford, value, jip);
+  }
+}
+
+// Fractional just intonation subgroup represented in Geometric Algebra
+export class Temperament extends BaseTemperament {
+  subgroup: Subgroup;
+
+  constructor(
+    algebra: typeof Element,
+    value: Element,
+    subgroup: SubgroupValue
+  ) {
+    super(algebra, value);
+    this.subgroup = new Subgroup(subgroup);
+  }
+
+  // Only checks numerical equality, canonize your inputs beforehand
+  equals(other: Temperament) {
+    if (!this.subgroup.equals(other.subgroup)) {
+      return false;
+    }
+    return super.equals(other);
+  }
+
+  toTenneyEuclid(primeMapping = false, metric_?: Metric): Mapping {
+    const jip_ = this.subgroup.jip();
+    const metric = metric_ === undefined ? jip_.map(j => 1 / j) : metric_;
+
+    const jip = new this.algebra(Array(this.value.length).fill(0));
+    jip_.forEach((j, i) => (jip[i + 1] = j * metric[i]));
+
+    const weightedValue_: number[] = [];
+    (this.algebra.describe().basis as string[]).forEach((label, index) => {
+      let component = this.value[index];
+      if (label[0] === 'e') {
+        label
+          .slice(1)
+          .split('')
+          .forEach(i => (component *= metric[parseInt(i) - 1]));
+      }
+      weightedValue_.push(component);
+    });
+    const weightedValue = new this.algebra(weightedValue_);
+
+    const projected = jip.Dot(weightedValue).Div(weightedValue);
+    for (let i = 0; i < metric.length; ++i) {
+      projected[i + 1] /= metric[i];
+    }
+    const result = [...projected.slice(1, 1 + metric.length)];
+    if (primeMapping) {
+      return this.subgroup.toPrimeMapping(result) as Mapping;
+    }
+    return result;
+  }
+
+  toPOTE(primeMapping = false, metric?: Metric): Mapping {
+    let result = this.toTenneyEuclid(false, metric);
+    const purifier = Math.log(this.subgroup.basis[0].valueOf()) / result[0];
+    result = result.map(component => component * purifier);
+    if (primeMapping) {
+      return this.subgroup.toPrimeMapping(result) as Mapping;
+    }
+    return result;
+  }
+
+  static fromValList(
+    vals: (Val | number | string)[],
+    subgroup_: SubgroupValue
+  ) {
+    const subgroup = new Subgroup(subgroup_);
+    const Clifford: typeof Element = (Algebra as any)(subgroup.basis.length);
+    const algebraSize = 1 << subgroup.basis.length;
+
+    if (!vals.length) {
+      const scalar = new Clifford(Array(algebraSize).fill(0));
+      scalar[0] = 1;
+      return new Temperament(Clifford, scalar, subgroup);
+    }
+    const promotedVals = vals.map(val_ => {
+      let val: Val;
+      if (typeof val_ === 'number' || typeof val_ === 'string') {
+        val = subgroup.fromWarts(val_);
+      } else {
+        val = val_;
+      }
+      const vector = Array(algebraSize).fill(0);
+      vector.splice(1, val.length, ...val);
+      return new Clifford(vector);
+    });
+    return new Temperament(
+      Clifford,
+      promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
+      subgroup
+    );
+  }
+
+  static fromCommaList(
+    commas: (Comma | FractionValue)[],
+    subgroup_?: SubgroupValue
+  ) {
+    let subgroup: Subgroup;
+    if (subgroup_ === undefined) {
+      subgroup = Subgroup.inferPrimeSubgroup(commas);
+    } else {
+      subgroup = new Subgroup(subgroup_);
+    }
+    const Clifford: typeof Element = (Algebra as any)(subgroup.basis.length);
+    const algebraSize = 1 << subgroup.basis.length;
+
+    const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
+    pseudoScalar[algebraSize - 1] = 1;
+    if (!commas.length) {
+      return new Temperament(Clifford, pseudoScalar, subgroup);
+    }
+
+    const promotedCommas = commas.map(comma_ => {
+      let comma: Comma;
+      if (Array.isArray(comma_) && comma_.length > 2) {
+        if (subgroup_ === undefined) {
+          comma = subgroup.strip(comma_ as Monzo);
+        } else {
+          comma = comma_ as Comma;
+        }
+      } else {
+        const [monzo, residual] = subgroup.toMonzoAndResidual(
+          comma_ as FractionValue
+        );
+        if (!residual.equals(1)) {
+          throw new Error('Comma outside subgroup');
+        }
+        comma = monzo;
+      }
+      const vector = Array(algebraSize).fill(0);
+      vector.splice(1, comma.length, ...comma);
+      return new Clifford(vector).Mul(pseudoScalar);
+    });
+
+    return new Temperament(
+      Clifford,
+      promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
+      subgroup
+    );
+  }
+
+  static fromPrefix(
+    rank: number,
+    wedgiePrefix: number[],
+    subgroup_: SubgroupValue
+  ) {
+    const subgroup = new Subgroup(subgroup_);
+    const dims = subgroup.basis.length;
+    const Clifford: typeof Element = (Algebra as any)(dims);
+    const algebraSize = 1 << dims;
+
+    const jip1 = new Clifford(Array(algebraSize).fill(0));
+    const jip = subgroup.jip();
+    jip.forEach((j, i) => (jip1[i + 1] = j / jip[0]));
+
+    let end = 0;
+    for (let i = 0; i < rank; ++i) {
+      end += binomial(dims, i);
+    }
+
+    const vector = Array(algebraSize).fill(0);
+    vector.splice(
+      end - wedgiePrefix.length,
+      wedgiePrefix.length,
+      ...wedgiePrefix
+    );
+    const value = new Clifford(vector).Wedge(jip1);
+    for (let i = 0; i < algebraSize; ++i) {
+      value[i] = Math.round(value[i]);
+    }
+    return new Temperament(Clifford, value, subgroup);
   }
 }

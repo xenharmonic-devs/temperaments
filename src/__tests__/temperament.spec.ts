@@ -3,25 +3,23 @@ import Fraction from 'fraction.js';
 
 import {dot, fractionToMonzoAndResidual, fractionToMonzo} from '../monzo';
 import {
-  inverseLogMetric,
   Temperament,
   natsToCents,
-  patentVal,
   fromWarts,
-  SubgroupTemperament,
   toWarts,
+  FreeTemperament,
 } from '../temperament';
 import {LOG_PRIMES} from '../constants';
 import {arraysEqual, mmod} from '../utils';
+import {Subgroup} from '../subgroup';
 
 describe('Temperament', () => {
   it('calculates meantone from vals', () => {
-    const subgroup = [0, 1, 2];
-    const metric = inverseLogMetric(subgroup);
+    const subgroup = new Subgroup([2, 3, 5]);
     const edo12 = [12, 19, 28];
     const edo19 = [19, 30, 44];
     const temperament = Temperament.fromValList([edo12, edo19], subgroup);
-    const meantone = temperament.toPOTE(metric);
+    const meantone = temperament.toPOTE();
 
     const syntonicComma = fractionToMonzoAndResidual(
       new Fraction(81, 80),
@@ -36,11 +34,10 @@ describe('Temperament', () => {
   });
 
   it('calculates meantone from commas', () => {
-    const subgroup = [0, 1, 2];
-    const metric = inverseLogMetric(subgroup);
+    const subgroup = new Subgroup(5);
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
     const temperament = Temperament.fromCommaList([syntonicComma], subgroup);
-    const meantone = temperament.toPOTE(metric);
+    const meantone = temperament.toPOTE();
 
     const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 3)[0];
     const octave = [1, 0, 0];
@@ -51,7 +48,7 @@ describe('Temperament', () => {
   });
 
   it('reduces to the trivial temperament when given no vals', () => {
-    const subgroup = [0, 1, 2];
+    const subgroup = new Subgroup(5);
     const temperament = Temperament.fromValList([], subgroup);
     const trivial = temperament.toTenneyEuclid();
     const octave = [1, 0, 0];
@@ -70,8 +67,7 @@ describe('Temperament', () => {
   });
 
   it('reduces to just intonation when given no commas', () => {
-    const subgroup = [0, 1, 2];
-    const temperament = Temperament.fromCommaList([], subgroup);
+    const temperament = Temperament.fromCommaList([], 5);
     const justIntonation = temperament.toTenneyEuclid();
     const octave = [1, 0, 0];
     const tritave = [0, 1, 0];
@@ -83,13 +79,9 @@ describe('Temperament', () => {
   });
 
   it('calculates miracle from commas', () => {
-    const subgroup = [0, 1, 2, 3];
     const marvelComma = fractionToMonzo(new Fraction(225, 224));
     const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
-    const temperament = Temperament.fromCommaList(
-      [marvelComma, gamelisma],
-      subgroup
-    );
+    const temperament = Temperament.fromCommaList([marvelComma, gamelisma], 7);
     const miracle = temperament.toPOTE();
 
     const largeSecor = fractionToMonzo(new Fraction(15, 14));
@@ -104,9 +96,7 @@ describe('Temperament', () => {
   });
 
   it('calculates miracle from vals', () => {
-    const edo10 = patentVal(10, 2, 4);
-    const edo21 = patentVal(21, 2, 4);
-    const temperament = Temperament.fromValList([edo10, edo21]);
+    const temperament = Temperament.fromValList([10, 21], 7);
     const miracle = temperament.toPOTE();
 
     const marvelComma = fractionToMonzo(new Fraction(225, 224));
@@ -123,10 +113,9 @@ describe('Temperament', () => {
   });
 
   it('calculates orgone from commas', () => {
-    const subgroup = [0, 3, 4];
     const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
-    const temperament = Temperament.fromCommaList([orgonisma], subgroup);
-    const orgone = temperament.toPOTE();
+    const temperament = Temperament.fromCommaList(['65536/65219']);
+    const orgone = temperament.toPOTE(true);
     const smitone = fractionToMonzo(new Fraction(77, 64));
     const octave = [1, 0, 0, 0, 0];
 
@@ -136,25 +125,22 @@ describe('Temperament', () => {
   });
 
   it('calculates orgone from vals', () => {
-    const subgroup = [0, 3, 4];
-    const edo11 = patentVal(11, 2, 5);
-    const edo18 = patentVal(18, 2, 5);
+    const subgroup = new Subgroup('2.7.11');
+    const edo11 = subgroup.patentVal(11);
+    const edo18 = subgroup.patentVal(18);
     const temperament = Temperament.fromValList([edo11, edo18], subgroup);
-    const orgone = temperament.toPOTE();
+    const orgone = temperament.toPOTE(true);
     const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
     const smitone = fractionToMonzo(new Fraction(77, 64));
     const octave = [1, 0, 0, 0, 0];
 
-    expect(dot(edo11, orgonisma)).toBe(0);
-    expect(dot(edo18, orgonisma)).toBe(0);
     expect(dot(orgone, orgonisma)).toBeCloseTo(0);
     expect(dot(orgone, octave)).toBeCloseTo(Math.LN2);
     expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
   });
 
   it('calculates blackwood in the 2.3 subgroup', () => {
-    const limma = fractionToMonzo(new Fraction(256, 243));
-    const temperament = Temperament.fromCommaList([limma]);
+    const temperament = Temperament.fromCommaList([new Fraction(256, 243)]);
     const blackwood = temperament.toPOTE();
     const fifth = fractionToMonzo(new Fraction(3, 2));
 
@@ -163,8 +149,8 @@ describe('Temperament', () => {
   });
 
   it('calculates blackwood in the 2.3.5 subgroup', () => {
-    const subgroup = [0, 1, 2];
-    const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
+    const subgroup = new Subgroup(5);
+    const limma = subgroup.toMonzoAndResidual(new Fraction(256, 243))[0];
     const temperament = Temperament.fromCommaList([limma], subgroup);
     const blackwood = temperament.toPOTE();
     const majorThird = fractionToMonzo(new Fraction(5, 4));
@@ -176,12 +162,13 @@ describe('Temperament', () => {
   });
 
   it('calculates arcturus in the 3.5.7 subgroup', () => {
-    const comma = fractionToMonzo(new Fraction(15625, 15309));
-    const temperament = Temperament.fromCommaList([comma]);
+    const temperament = Temperament.fromCommaList([[15625, 15309]]);
     const arcturus = temperament.toPOTE();
-    const majorSixth = fractionToMonzoAndResidual(new Fraction(5, 3), 4)[0];
+    const majorSixth = temperament.subgroup.toMonzoAndResidual(
+      new Fraction(5, 3)
+    )[0];
 
-    expect(arcturus.length).toBe(4);
+    expect(arcturus.length).toBe(3);
     expect(natsToCents(dot(arcturus, majorSixth))).toBeCloseTo(878.042);
   });
 
@@ -202,10 +189,14 @@ describe('Temperament', () => {
   });
 
   it('calculates starling rank 3 from a list of vals', () => {
-    const edo12 = patentVal(12, 2, 4);
-    const edo27 = patentVal(27, 2, 4);
-    const edo31 = patentVal(31, 2, 4);
-    const temperament = Temperament.fromValList([edo12, edo27, edo31]);
+    const subgroup = new Subgroup(7);
+    const edo12 = subgroup.patentVal(12);
+    const edo27 = subgroup.patentVal(27);
+    const edo31 = subgroup.patentVal(31);
+    const temperament = Temperament.fromValList(
+      [edo12, edo27, edo31],
+      subgroup
+    );
     const starling = temperament.toTenneyEuclid();
     const comma = fractionToMonzo(new Fraction(126, 125));
     const octave = [1, 0, 0, 0];
@@ -220,8 +211,7 @@ describe('Temperament', () => {
   });
 
   it('calculates marvel rank 3 from a comma', () => {
-    const comma = fractionToMonzo(new Fraction(225, 224));
-    const temperament = Temperament.fromCommaList([comma]);
+    const temperament = Temperament.fromCommaList(['225/224']);
     const marvel = temperament.toPOTE();
     const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 4)[0];
     const majorThird = fractionToMonzoAndResidual(new Fraction(5, 4), 4)[0];
@@ -241,11 +231,7 @@ describe('Temperament', () => {
   });
 
   it('calculates keenanismic rank 4 from a list of vals', () => {
-    const edo9 = patentVal(9, 2, 5);
-    const edo10 = patentVal(10, 2, 5);
-    const edo12e = fromWarts('12e', 5);
-    const edo15 = patentVal(15, 2, 5);
-    const temperament = Temperament.fromValList([edo9, edo10, edo12e, edo15]);
+    const temperament = Temperament.fromValList([9, 10, '12e', 15], 11);
     const keenanismic = temperament.toPOTE();
 
     const keenanisma = fractionToMonzo(new Fraction(385, 384));
@@ -254,22 +240,12 @@ describe('Temperament', () => {
   });
 
   it('has a consistent internal representation for the same temperament in 3D', () => {
-    const subgroup = [0, 1, 2];
-    const edo12 = patentVal(12, 2, 3);
-    const edo19 = patentVal(19, 2, 3);
-    const edo31 = patentVal(31, 2, 3);
-    const syntonicComma = fractionToMonzo(new Fraction(81, 80));
+    const subgroup = new Subgroup(5);
 
-    const twelveAndNineteen = Temperament.fromValList([edo12, edo19], subgroup);
-    const twelveAndThirtyOne = Temperament.fromValList(
-      [edo12, edo31],
-      subgroup
-    );
-    const nineteenAndThirtyOne = Temperament.fromValList(
-      [edo19, edo31],
-      subgroup
-    );
-    const meantone = Temperament.fromCommaList([syntonicComma], subgroup);
+    const twelveAndNineteen = Temperament.fromValList([12, 19], subgroup);
+    const twelveAndThirtyOne = Temperament.fromValList([12, 31], subgroup);
+    const nineteenAndThirtyOne = Temperament.fromValList([19, 31], subgroup);
+    const meantone = Temperament.fromCommaList([{n: 81, d: 80}]);
 
     for (let i = 0; i < 2 ** 3; ++i) {
       expect(meantone.value[i]).toBe(Math.floor(meantone.value[i]));
@@ -280,14 +256,12 @@ describe('Temperament', () => {
   });
 
   it('has a consistent internal representation for the same temperament in 4D', () => {
-    const subgroup = [0, 1, 2, 3];
-    const edo9 = patentVal(9, 2, 4);
-    const edo10 = patentVal(10, 2, 4);
-    const edo12 = patentVal(12, 2, 4);
+    const subgroup = new Subgroup(7);
+    const edo9 = subgroup.patentVal(9);
     const comma = fractionToMonzo(new Fraction(225, 224));
 
     const nineAndTenAndTwelve = Temperament.fromValList(
-      [edo9, edo10, edo12],
+      [edo9, 10, 12],
       subgroup
     );
     const marvel = Temperament.fromCommaList([comma], subgroup);
@@ -299,20 +273,13 @@ describe('Temperament', () => {
   });
 
   it('has a consistent internal representation for the same temperament in 4D with a 3D comma', () => {
-    const subgroup = [0, 1, 2, 3];
-    const edo10 = patentVal(10, 2, 4);
-    const edo12 = patentVal(12, 2, 4);
-    const edo46 = patentVal(46, 2, 4);
-    const diaschisma = fractionToMonzoAndResidual(
-      new Fraction(2048, 2025),
-      4
-    )[0];
+    const subgroup = new Subgroup(7);
 
     const tenAndTwelveAndFortySix = Temperament.fromValList(
-      [edo10, edo12, edo46],
+      [10, 12, 46],
       subgroup
     );
-    const diaschismic = Temperament.fromCommaList([diaschisma], subgroup);
+    const diaschismic = Temperament.fromCommaList(['2048/2025'], subgroup);
 
     for (let i = 0; i < 2 ** 4; ++i) {
       expect(diaschismic.value[i]).toBe(Math.floor(diaschismic.value[i]));
@@ -345,7 +312,7 @@ describe('Temperament', () => {
     const [divisions, generator] = temperament.divisionsGenerator();
 
     expect(divisions).toBe(1);
-    expect(generator.length).toBe(5);
+    expect(generator.length).toBe(3);
 
     const orgone = temperament.toPOTE();
     const poteGenerator = 323.372;
@@ -358,7 +325,7 @@ describe('Temperament', () => {
 
   it('can figure out the period and a generator for blackwood', () => {
     const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
-    const subgroup = [0, 1, 2];
+    const subgroup = new Subgroup(5);
     const temperament = Temperament.fromCommaList([limma], subgroup);
     const [divisions, generator] = temperament.divisionsGenerator();
 
@@ -374,7 +341,7 @@ describe('Temperament', () => {
 
   it('can figure out the period and a generator for augmented', () => {
     const diesis = fractionToMonzo(new Fraction(128, 125));
-    const subgroup = [0, 1, 2];
+    const subgroup = new Subgroup(5);
     const temperament = Temperament.fromCommaList([diesis], subgroup);
     const [divisions, generator] = temperament.divisionsGenerator();
 
@@ -389,9 +356,7 @@ describe('Temperament', () => {
   });
 
   it('can figure out the period and a generator for miracle', () => {
-    const marvelComma = fractionToMonzo(new Fraction(225, 224));
-    const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
-    const temperament = Temperament.fromCommaList([marvelComma, gamelisma]);
+    const temperament = Temperament.fromCommaList(['225/224', '1029/1024']);
     const [divisions, generator] = temperament.divisionsGenerator();
 
     expect(divisions).toBe(1);
@@ -409,8 +374,8 @@ describe('Temperament', () => {
     const diesis = fractionToMonzo(new Fraction(49, 48));
     const temperament = Temperament.fromCommaList([diesis]);
     temperament.canonize();
-    expect(temperament.subgroup.length).toBe(3);
-    const subgroup = [0, 1, 3];
+    expect(temperament.subgroup.basis.length).toBe(3);
+    const subgroup = new Subgroup('2.3.7');
     const prefix = temperament.rankPrefix(2);
     expect(prefix.length).toBe(2);
     expect(prefix[0]).toBe(2);
@@ -421,11 +386,9 @@ describe('Temperament', () => {
   });
 
   it('can recover miracle from its prefix', () => {
-    const marvelComma = fractionToMonzo(new Fraction(225, 224));
-    const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
-    const temperament = Temperament.fromCommaList([marvelComma, gamelisma]);
+    const temperament = Temperament.fromCommaList(['225/224', '1029/1024']);
     temperament.canonize();
-    expect(temperament.subgroup.length).toBe(4);
+    expect(temperament.subgroup.basis.length).toBe(4);
     const prefix = temperament.rankPrefix(2);
     expect(prefix.length).toBe(3);
     expect(prefix[0]).toBe(6);
@@ -438,10 +401,10 @@ describe('Temperament', () => {
 
   it('can recover augmented from its prefix', () => {
     const diesis = fractionToMonzo(new Fraction(128, 125));
-    const subgroup = [0, 1, 2];
+    const subgroup = new Subgroup(5);
     const temperament = Temperament.fromCommaList([diesis], subgroup);
     temperament.canonize();
-    expect(temperament.subgroup.length).toBe(3);
+    expect(temperament.subgroup.basis.length).toBe(3);
     const prefix = temperament.rankPrefix(2);
     expect(prefix.length).toBe(2);
     expect(prefix[0]).toBe(3);
@@ -460,14 +423,37 @@ describe('Temperament', () => {
     recovered.canonize();
     expect(temperament.equals(recovered)).toBeTruthy();
   });
+
+  it('can handle a fractional non-orthogonal JI subgroup such as 2.3.13/5.19/5 (pinkan)', () => {
+    const subgroup = new Subgroup('2.3.13/5.19/5');
+    const islandComma = subgroup.toMonzoAndResidual('676/675')[0];
+    const password = subgroup.toMonzoAndResidual('1216/1215')[0];
+    const temperament = Temperament.fromCommaList(
+      [islandComma, password],
+      subgroup
+    );
+    const pinkan = temperament.toPOTE();
+
+    const [d, g] = temperament.divisionsGenerator();
+
+    const semifourth = subgroup.toMonzoAndResidual(new Fraction(15, 13))[0];
+    const octave = [1, 0, 0, 0];
+
+    expect(d).toBe(1);
+    expect(dot(pinkan, islandComma)).toBeCloseTo(0);
+    expect(dot(pinkan, password)).toBeCloseTo(0);
+    expect(dot(pinkan, octave)).toBeCloseTo(Math.LN2);
+    expect(natsToCents(dot(pinkan, semifourth))).toBeCloseTo(248.868);
+    expect(mmod(natsToCents(dot(pinkan, g)), 1200)).toBeCloseTo(1200 - 248.868);
+  });
 });
 
-describe('Fractional Subgroup Temperament', () => {
+describe('Free Temperament', () => {
   it('calculates meantone from vals', () => {
     const jip = LOG_PRIMES.slice(0, 3);
     const edo12 = [12, 19, 28];
     const edo19 = [19, 30, 44];
-    const temperament = SubgroupTemperament.fromValList([edo12, edo19], jip);
+    const temperament = FreeTemperament.fromValList([edo12, edo19], jip);
     const meantone = temperament.toPOTE();
 
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
@@ -483,7 +469,7 @@ describe('Fractional Subgroup Temperament', () => {
     const monzo = fractionToMonzo(new Fraction(676, 675));
     const islandComma = [monzo[0], monzo[1], monzo[5]];
     const jip = [Math.LN2, LOG_PRIMES[1], LOG_PRIMES[5] - LOG_PRIMES[2]];
-    const temperament = SubgroupTemperament.fromCommaList([islandComma], jip);
+    const temperament = FreeTemperament.fromCommaList([islandComma], jip);
 
     const barbados = temperament.toPOTE();
 
@@ -491,7 +477,7 @@ describe('Fractional Subgroup Temperament', () => {
 
     temperament.canonize();
     const prefix = temperament.rankPrefix(2);
-    const recovered = SubgroupTemperament.fromPrefix(2, prefix, jip);
+    const recovered = FreeTemperament.fromPrefix(2, prefix, jip);
     recovered.canonize();
 
     const genMonzo = fractionToMonzo(new Fraction(15, 13));
@@ -519,7 +505,7 @@ describe('Fractional Subgroup Temperament', () => {
       LOG_PRIMES[5] - LOG_PRIMES[2],
       LOG_PRIMES[7] - LOG_PRIMES[2],
     ];
-    const temperament = SubgroupTemperament.fromCommaList(
+    const temperament = FreeTemperament.fromCommaList(
       [islandComma, password],
       jip
     );

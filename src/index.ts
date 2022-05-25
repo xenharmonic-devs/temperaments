@@ -17,25 +17,29 @@ export {
   inferSubgroup,
   patentVal,
   fromWarts,
-  Temperament,
-  type Subgroup,
+  PrimeTemperament as Temperament,
+  type PrimeSubgroup as Subgroup,
 } from './temperament';
 
 import {getSingleCommaColorName} from './color';
 import {LOG_PRIMES, PRIMES} from './constants';
 import {dot, Monzo} from './monzo';
-import {SubgroupTemperament, Temperament} from './temperament';
+import {FreeTemperament, PrimeTemperament} from './temperament';
 
 let rawRank2Data: Object | undefined;
 
 export function getRank2GivenName(
-  temperament: Temperament | SubgroupTemperament,
+  temperament: PrimeTemperament | FreeTemperament,
   subgroup?: string
 ): string | undefined {
   const prefix = temperament.rankPrefix(2);
   let subgroupString: string;
-  if (temperament instanceof Temperament) {
-    const recovered = Temperament.fromPrefix(2, prefix, temperament.subgroup);
+  if (temperament instanceof PrimeTemperament) {
+    const recovered = PrimeTemperament.fromPrefix(
+      2,
+      prefix,
+      temperament.subgroup
+    );
     recovered.canonize();
     if (!temperament.equals(recovered)) {
       return undefined;
@@ -47,11 +51,7 @@ export function getRank2GivenName(
         'Need explicit subgroup string when parameter is a fractional subgroup temperament'
       );
     }
-    const recovered = SubgroupTemperament.fromPrefix(
-      2,
-      prefix,
-      temperament.jip
-    );
+    const recovered = FreeTemperament.fromPrefix(2, prefix, temperament.jip);
     recovered.canonize();
     if (!temperament.equals(recovered)) {
       return undefined;
@@ -71,7 +71,7 @@ export function getRank2GivenName(
 }
 
 // Assumes the argument has been canonized
-export function getSingleCommaName(temperament: Temperament) {
+export function getSingleCommaName(temperament: PrimeTemperament) {
   // There should be enough guards in getRank2GivenName to avoid false positives even for rank 3
   const given = getRank2GivenName(temperament);
   let color: string | undefined = undefined;

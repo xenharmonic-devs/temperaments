@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "fraction.js": "^4.2.0",
-    "ganja.js": "^1.0.194"
+    "ganja.js": "^1.0.194",
+    "mathjs": "^10.6.0"
   }
 }

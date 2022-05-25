@@ -1,6 +1,6 @@
 import {LOG_PRIMES, PRIMES} from './constants';
 import {dot, monzosEqual, type Monzo} from './monzo';
-import {Temperament} from './temperament';
+import {PrimeTemperament} from './temperament';
 
 const PSEUDO_EDO_MAPPING = [7, 11, 16, 20, 24, 26, 29, 30, 32, 34, 37];
 
@@ -530,7 +530,7 @@ export function monzoToColorComma(monzo: Monzo): string {
 }
 
 // Get color name for a temperament of only one vanishing comma
-export function getSingleCommaColorName(temperament: Temperament) {
+export function getSingleCommaColorName(temperament: PrimeTemperament) {
   const commish = temperament.value.Dual;
   const monzo: Monzo = Array(PSEUDO_EDO_MAPPING.length).fill(0);
   temperament.subgroup.forEach((index, i) => {

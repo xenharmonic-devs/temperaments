@@ -1,4 +1,4 @@
-import {parseSubgroup, Temperament} from '../src/temperament';
+import {parseSubgroup, PrimeTemperament} from '../src/temperament';
 import {getSingleCommaColorName} from '../src/color';
 
 const rawRank2Data = require('../resources/x31eqRank2.json');
@@ -12,7 +12,7 @@ Object.entries(rawRank2Data).forEach(e => {
   Object.entries(data as Object).forEach(entry => {
     const [prefixString, name] = entry;
     const prefix = prefixString.split(',').map(n => parseInt(n));
-    const temperament = Temperament.fromPrefix(2, prefix, subgroup);
+    const temperament = PrimeTemperament.fromPrefix(2, prefix, subgroup);
 
     try {
       const colorName = getSingleCommaColorName(temperament);
