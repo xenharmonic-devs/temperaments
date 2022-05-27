@@ -1,7 +1,6 @@
 import type {Monzo} from './monzo';
 import Algebra = require('ganja.js');
 import {type Element} from 'ganja.js';
-import {LOG_PRIMES, PRIMES} from './constants';
 import {binomial, gcd, iteratedEuclid} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue, FractionValue} from './subgroup';
@@ -19,33 +18,9 @@ export type Comma = number[];
 // I think ganja.js ignores metric magnitude so we pre- and post-process
 export type Metric = number[];
 
-export type PrimeSubgroup = number[];
-
-// Parse a subgroup like 2.3.7 to prime indices like [0, 1, 3]
-export function parseSubgroup(token: string) {
-  const subgroup = token.split('.').map(p => PRIMES.indexOf(parseInt(p)));
-  if (subgroup.includes(-1)) {
-    return undefined;
-  }
-  return subgroup;
-}
-
 // Parse a subgroup like 2.15.11/7 to a list of logarithms
 export function parseJIP(token: string) {
   return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
-}
-
-export function inverseLogMetric(subgroup: PrimeSubgroup): Metric {
-  return subgroup.map(index => 1 / LOG_PRIMES[index]);
-}
-
-export function flatMetric(subgroup: PrimeSubgroup): Metric;
-export function flatMetric(subgroupSize: number): Metric;
-export function flatMetric(subgroupOrSize: number | PrimeSubgroup) {
-  if (typeof subgroupOrSize === 'number') {
-    return Array(subgroupOrSize).fill(1);
-  }
-  return Array(subgroupOrSize.length).fill(1);
 }
 
 export function natsToCents(nats: number) {
@@ -54,25 +29,6 @@ export function natsToCents(nats: number) {
 
 export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
-}
-
-export function inferSubgroup(monzos: Monzo[]): PrimeSubgroup {
-  const result: PrimeSubgroup = [];
-  if (!monzos.length) {
-    return result;
-  }
-  for (let i = 0; i < monzos[0].length; ++i) {
-    let hasComponent = false;
-    monzos.forEach(monzo => {
-      if (monzo[i] !== 0) {
-        hasComponent = true;
-      }
-    });
-    if (hasComponent) {
-      result.push(i);
-    }
-  }
-  return result;
 }
 
 abstract class BaseTemperament {
@@ -152,184 +108,6 @@ abstract class BaseTemperament {
       start += binomial(dims, i);
     }
     return [...this.value.slice(start, start + binomial(dims - 1, rank - 1))];
-  }
-}
-
-// Musical temperament represented in Geometric Algebra
-export class PrimeTemperament extends BaseTemperament {
-  subgroup: PrimeSubgroup;
-
-  constructor(
-    algebra: typeof Element,
-    value: Element,
-    subgroup: PrimeSubgroup
-  ) {
-    super(algebra, value);
-    this.subgroup = subgroup;
-  }
-
-  canonize() {
-    for (let i = 0; i < this.subgroup.length - 1; ++i) {
-      if (this.subgroup[i] >= this.subgroup[i + 1]) {
-        throw new Error('Out of order subgroup');
-      }
-    }
-    super.canonize();
-  }
-
-  // Only checks numerical equality, canonize your inputs beforehand
-  equals(other: PrimeTemperament) {
-    if (this.subgroup.length !== other.subgroup.length) {
-      return false;
-    }
-    for (let i = 0; i < this.subgroup.length; ++i) {
-      if (this.subgroup[i] !== other.subgroup[i]) {
-        return false;
-      }
-    }
-    return super.equals(other);
-  }
-
-  toTenneyEuclid(metric_?: Metric): Mapping {
-    const metric =
-      metric_ === undefined ? inverseLogMetric(this.subgroup) : metric_;
-    const jip = new this.algebra(Array(this.value.length).fill(0));
-    this.subgroup.forEach(
-      (index, i) => (jip[i + 1] = LOG_PRIMES[index] * metric[i])
-    );
-
-    const weightedValue_: number[] = [];
-    (this.algebra.describe().basis as string[]).forEach((label, index) => {
-      let component = this.value[index];
-      if (label[0] === 'e') {
-        label
-          .slice(1)
-          .split('')
-          .forEach(i => (component *= metric[parseInt(i) - 1]));
-      }
-      weightedValue_.push(component);
-    });
-    const weightedValue = new this.algebra(weightedValue_);
-
-    const projected = jip.Dot(weightedValue).Div(weightedValue);
-
-    const result = LOG_PRIMES.slice(
-      0,
-      1 + this.subgroup.reduce((a, b) => Math.max(a, b))
-    );
-    this.subgroup.forEach((index, i) => {
-      result[index] = projected[1 + i] / metric[i];
-    });
-    return result;
-  }
-
-  toPOTE(metric?: Metric): Mapping {
-    const result = this.toTenneyEuclid(metric);
-    const indexOfEquivalence = this.subgroup.reduce((a, b) => Math.min(a, b));
-    const purifier =
-      LOG_PRIMES[indexOfEquivalence] / result[indexOfEquivalence];
-    return result.map(component => component * purifier);
-  }
-
-  // Assumes this is canonized rank-2
-  divisionsGenerator(): [number, Monzo] {
-    const [d, subGenerator] = super.divisionsGenerator();
-    const superSize = this.subgroup.reduce((a, b) => Math.max(a, b)) + 1;
-    const superGenerator = Array(superSize).fill(0);
-    this.subgroup.forEach((index, i) => {
-      superGenerator[index] = subGenerator[i];
-    });
-    return [d, superGenerator];
-  }
-
-  static fromValList(vals: Val[], subgroup_?: PrimeSubgroup) {
-    let subgroup: PrimeSubgroup = [];
-    if (subgroup_ === undefined) {
-      if (!vals.length) {
-        throw new Error('No vals or subgroup given');
-      }
-      for (let i = 0; i < vals[0].length; ++i) {
-        subgroup.push(i);
-      }
-    } else {
-      subgroup = subgroup_;
-    }
-
-    const Clifford: typeof Element = (Algebra as any)(subgroup.length);
-    const algebraSize = 1 << subgroup.length;
-
-    if (!vals.length) {
-      const scalar = new Clifford(Array(algebraSize).fill(0));
-      scalar[0] = 1;
-      return new PrimeTemperament(Clifford, scalar, subgroup);
-    }
-    const promotedVals = vals.map(val => {
-      const vector = Array(algebraSize).fill(0);
-      vector.splice(1, subgroup.length, ...subgroup.map(index => val[index]));
-      return new Clifford(vector);
-    });
-    return new PrimeTemperament(
-      Clifford,
-      promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
-      subgroup
-    );
-  }
-
-  static fromCommaList(commas: Comma[], subgroup_?: PrimeSubgroup) {
-    const subgroup =
-      subgroup_ === undefined ? inferSubgroup(commas) : subgroup_;
-
-    const Clifford: typeof Element = (Algebra as any)(subgroup.length);
-    const algebraSize = 1 << subgroup.length;
-
-    const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
-    pseudoScalar[algebraSize - 1] = 1;
-    if (!commas.length) {
-      return new PrimeTemperament(Clifford, pseudoScalar, subgroup);
-    }
-
-    const promotedCommas = commas.map(comma => {
-      const vector = Array(algebraSize).fill(0);
-      vector.splice(1, subgroup.length, ...subgroup.map(index => comma[index]));
-      return new Clifford(vector).Mul(pseudoScalar);
-    });
-    return new PrimeTemperament(
-      Clifford,
-      promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
-      subgroup
-    );
-  }
-
-  static fromPrefix(
-    rank: number,
-    wedgiePrefix: number[],
-    subgroup: PrimeSubgroup
-  ) {
-    const dims = subgroup.length;
-    const Clifford: typeof Element = (Algebra as any)(dims);
-    const algebraSize = 1 << dims;
-
-    const jip1 = new Clifford(Array(algebraSize).fill(0));
-    subgroup.forEach(
-      (index, i) => (jip1[1 + i] = LOG_PRIMES[index] / LOG_PRIMES[subgroup[0]])
-    );
-
-    let end = 0;
-    for (let i = 0; i < rank; ++i) {
-      end += binomial(dims, i);
-    }
-
-    const vector = Array(algebraSize).fill(0);
-    vector.splice(
-      end - wedgiePrefix.length,
-      wedgiePrefix.length,
-      ...wedgiePrefix
-    );
-    const value = new Clifford(vector).Wedge(jip1);
-    for (let i = 0; i < algebraSize; ++i) {
-      value[i] = Math.round(value[i]);
-    }
-    return new PrimeTemperament(Clifford, value, subgroup);
   }
 }
 

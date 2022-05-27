@@ -1,6 +1,5 @@
 import {
   Temperament,
-  patentVal,
   LOG_PRIMES,
   dot,
   natsToCents,
@@ -8,18 +7,19 @@ import {
   monzosEqual,
   getRank2GivenName,
 } from '../src/index';
+import {Subgroup} from '../src/subgroup';
 
-const subgroup = [0, 1, 2, 3];
+const subgroup = new Subgroup(7);
 
 const temperaments: Temperament[] = [];
 
 const minEdo = 5;
 const maxEdo = 53;
 for (let a = minEdo; a <= maxEdo; ++a) {
-  const valA = patentVal(a, 4);
+  const valA = subgroup.patentVal(a);
   for (let b = a + 1; b <= maxEdo; ++b) {
-    const valB = patentVal(b, 4);
-    const temperament = Temperament.fromValList([valA, valB]);
+    const valB = subgroup.patentVal(b);
+    const temperament = Temperament.fromValList([valA, valB], subgroup);
     if (temperament.isNil()) {
       continue;
     }
@@ -117,7 +117,10 @@ console.log(
 console.log('Tempering out pairs of commas...');
 for (let i = 0; i < commas.length; ++i) {
   for (let j = i + 1; j < commas.length; ++j) {
-    const temperament = Temperament.fromCommaList([commas[i], commas[j]]);
+    const temperament = Temperament.fromCommaList(
+      [commas[i], commas[j]],
+      subgroup
+    );
     if (temperament.isNil()) {
       continue;
     }

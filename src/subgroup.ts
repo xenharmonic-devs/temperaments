@@ -32,6 +32,10 @@ export class Subgroup {
     }
   }
 
+  toString() {
+    return this.basis.map(b => b.toFraction()).join('.');
+  }
+
   jip() {
     return this.basis.map(b => Math.log(b.valueOf()));
   }

@@ -1,6 +1,6 @@
 import {LOG_PRIMES, PRIMES} from './constants';
 import {dot, monzosEqual, type Monzo} from './monzo';
-import {PrimeTemperament} from './temperament';
+import {Temperament} from './temperament';
 
 const PSEUDO_EDO_MAPPING = [7, 11, 16, 20, 24, 26, 29, 30, 32, 34, 37];
 
@@ -530,10 +530,16 @@ export function monzoToColorComma(monzo: Monzo): string {
 }
 
 // Get color name for a temperament of only one vanishing comma
-export function getSingleCommaColorName(temperament: PrimeTemperament) {
+export function getSingleCommaColorName(temperament: Temperament) {
   const commish = temperament.value.Dual;
   const monzo: Monzo = Array(PSEUDO_EDO_MAPPING.length).fill(0);
-  temperament.subgroup.forEach((index, i) => {
+  const primeIndices: number[] = [];
+  temperament.subgroup.basis.forEach((maybePrime, i) => {
+    if (maybePrime.d !== 1) {
+      throw new Error('Non-prime subgroup');
+    }
+    const index = PRIMES.indexOf(maybePrime.n);
+    primeIndices.push(index);
     if (index >= monzo.length) {
       throw new Error('Subgroup too complex');
     }
@@ -547,18 +553,18 @@ export function getSingleCommaColorName(temperament: PrimeTemperament) {
   }
   let name = monzoToColorComma(monzo);
 
-  if (!temperament.subgroup.includes(1)) {
-    if (!temperament.subgroup.includes(0)) {
+  if (!primeIndices.includes(1)) {
+    if (!primeIndices.includes(0)) {
       name += ' Nowaca';
     } else {
       name += ' Nowa';
     }
-  } else if (!temperament.subgroup.includes(0)) {
+  } else if (!primeIndices.includes(0)) {
     name += ' Noca';
   }
 
-  for (let i = temperament.subgroup.length - 1; i >= 0; --i) {
-    const limit = temperament.subgroup[i];
+  for (let i = primeIndices.length - 1; i >= 0; --i) {
+    const limit = primeIndices[i];
     if (limit > 1 && monzo[limit] === 0) {
       name += ' + ' + ALL_BY_LIMIT[limit];
     }
