@@ -1,6 +1,5 @@
 import type {Monzo} from './monzo';
-import Algebra = require('ganja.js');
-import {type Element} from 'ganja.js';
+import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
 import {binomial, gcd, iteratedEuclid} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue, FractionValue} from './subgroup';
@@ -32,10 +31,10 @@ export function centsToNats(cents: number) {
 }
 
 abstract class BaseTemperament {
-  algebra: typeof Element; // Clifford Algebra
-  value: Element; // Multivector of the Clifford Algebra
+  algebra: typeof AlgebraElement; // Clifford Algebra
+  value: AlgebraElement; // Multivector of the Clifford Algebra
 
-  constructor(algebra: typeof Element, value: Element) {
+  constructor(algebra: typeof AlgebraElement, value: AlgebraElement) {
     this.algebra = algebra;
     this.value = value;
   }
@@ -71,43 +70,36 @@ abstract class BaseTemperament {
 
   // Only checks numerical equality, canonize your inputs beforehand
   equals(other: BaseTemperament) {
-    if (this.value.length !== other.value.length) {
-      return false;
-    }
-
-    for (let i = 0; i < this.value.length; ++i) {
-      if (this.value[i] !== other.value[i]) {
-        return false;
-      }
-    }
-    return true;
+    return this.value.equals(other.value);
   }
 
   // abstract toTenneyEuclid(metric_?: Metric): Mapping;
   // abstract toPOTE(metric?: Metric): Mapping;
 
   get dimensions() {
-    return Math.round(Math.log(this.value.length) / Math.LN2);
+    return this.algebra.dimensions;
   }
 
   // Assumes this is canonized rank-2
   divisionsGenerator(): [number, Monzo] {
-    const equaveUnit = new this.algebra(Array(this.value.length).fill(0));
-    equaveUnit[1] = 1;
-    const equaveProj = equaveUnit.Dot(this.value);
-    const generator = new this.algebra(iteratedEuclid([...equaveProj]));
-    const divisions = Math.abs(generator.Dot(equaveProj).s);
+    // TODO: Use monzo dots
+    const equaveUnit = this.algebra.basisVector(0);
+    const equaveProj = equaveUnit.dot(this.value);
+    const generator = this.algebra.fromVector(
+      iteratedEuclid([...equaveProj.vector()])
+    );
+    const divisions = Math.abs(generator.dot(equaveProj).s);
 
-    return [divisions, [...generator.slice(1, this.dimensions + 1)]];
+    return [divisions, [...generator.vector()]];
   }
 
   rankPrefix(rank: number): number[] {
-    const dims = this.dimensions;
-    let start = 0;
-    for (let i = 0; i < rank; ++i) {
-      start += binomial(dims, i);
-    }
-    return [...this.value.slice(start, start + binomial(dims - 1, rank - 1))];
+    return [
+      ...(this.value.vector(rank) as Float32Array).slice(
+        0,
+        binomial(this.dimensions - 1, rank - 1)
+      ),
+    ];
   }
 }
 
@@ -115,7 +107,7 @@ abstract class BaseTemperament {
 export class FreeTemperament extends BaseTemperament {
   jip: Mapping; // Just Intonation Point
 
-  constructor(algebra: typeof Element, value: Element, jip: any) {
+  constructor(algebra: typeof AlgebraElement, value: AlgebraElement, jip: any) {
     super(algebra, value);
     this.jip = jip;
   }
@@ -137,27 +129,14 @@ export class FreeTemperament extends BaseTemperament {
   toTenneyEuclid(metric_?: Metric): Mapping {
     const metric = metric_ === undefined ? this.jip.map(j => 1 / j) : metric_;
 
-    const jip = new this.algebra(Array(this.value.length).fill(0));
-    this.jip.forEach((j, i) => (jip[i + 1] = j * metric[i]));
+    const jip = this.algebra.fromVector(this.jip.map((j, i) => j * metric[i]));
 
-    const weightedValue_: number[] = [];
-    (this.algebra.describe().basis as string[]).forEach((label, index) => {
-      let component = this.value[index];
-      if (label[0] === 'e') {
-        label
-          .slice(1)
-          .split('')
-          .forEach(i => (component *= metric[parseInt(i) - 1]));
-      }
-      weightedValue_.push(component);
-    });
-    const weightedValue = new this.algebra(weightedValue_);
+    const weightedValue = this.value.applyWeights(metric);
 
-    const projected = jip.Dot(weightedValue).Div(weightedValue);
-    for (let i = 0; i < metric.length; ++i) {
-      projected[i + 1] /= metric[i];
-    }
-    return [...projected.slice(1, 1 + metric.length)];
+    const projected = jip.dot(weightedValue).div(weightedValue);
+    return [
+      ...(projected.vector() as Float32Array).map((p, i) => p / metric[i]),
+    ];
   }
 
   toPOTE(metric?: Metric): Mapping {
@@ -167,70 +146,53 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   static fromValList(vals: Val[], jip: Mapping) {
-    const Clifford: typeof Element = (Algebra as any)(jip.length);
-    const algebraSize = 1 << jip.length;
+    const Clifford = Algebra(jip.length);
 
     if (!vals.length) {
-      const scalar = new Clifford(Array(algebraSize).fill(0));
-      scalar[0] = 1;
-      return new FreeTemperament(Clifford, scalar, jip);
+      return new FreeTemperament(Clifford, Clifford.scalar(), jip);
     }
-    const promotedVals = vals.map(val => {
-      const vector = Array(algebraSize).fill(0);
-      vector.splice(1, val.length, ...val);
-      return new Clifford(vector);
-    });
+    const promotedVals = vals.map(val => Clifford.fromVector(val));
     return new FreeTemperament(
       Clifford,
-      promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
+      promotedVals.reduce((a, b) => wedge(a, b)),
       jip
     );
   }
 
   static fromCommaList(commas: Comma[], jip: Mapping) {
-    const Clifford: typeof Element = (Algebra as any)(jip.length);
-    const algebraSize = 1 << jip.length;
+    const Clifford = Algebra(jip.length);
 
-    const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
-    pseudoScalar[algebraSize - 1] = 1;
+    const pseudoScalar = Clifford.pseudoscalar();
     if (!commas.length) {
       return new FreeTemperament(Clifford, pseudoScalar, jip);
     }
 
-    const promotedCommas = commas.map(comma => {
-      const vector = Array(algebraSize).fill(0);
-      vector.splice(1, comma.length, ...comma);
-      return new Clifford(vector).Mul(pseudoScalar);
-    });
+    const promotedCommas = commas.map(comma =>
+      Clifford.fromVector(comma).mul(pseudoScalar)
+    );
 
     return new FreeTemperament(
       Clifford,
-      promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
+      promotedCommas.reduce((a, b) => vee(a, b)),
       jip
     );
   }
 
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
     const dims = jip.length;
-    const Clifford: typeof Element = (Algebra as any)(dims);
-    const algebraSize = 1 << dims;
+    const Clifford = Algebra(dims);
 
-    const jip1 = new Clifford(Array(algebraSize).fill(0));
-    jip.forEach((j, i) => (jip1[i + 1] = j / jip[0]));
+    const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
 
-    let end = 0;
-    for (let i = 0; i < rank; ++i) {
-      end += binomial(dims, i);
-    }
-
-    const vector = Array(algebraSize).fill(0);
-    vector.splice(
-      end - wedgiePrefix.length,
+    const paddedWedgie = Array(binomial(dims, rank - 1)).fill(0);
+    paddedWedgie.splice(
+      paddedWedgie.length - wedgiePrefix.length,
       wedgiePrefix.length,
       ...wedgiePrefix
     );
-    const value = new Clifford(vector).Wedge(jip1);
-    for (let i = 0; i < algebraSize; ++i) {
+
+    const value = Clifford.fromVector(paddedWedgie, rank - 1).wedge(jip1);
+    for (let i = 0; i < value.length; ++i) {
       value[i] = Math.round(value[i]);
     }
     return new FreeTemperament(Clifford, value, jip);
@@ -242,8 +204,8 @@ export class Temperament extends BaseTemperament {
   subgroup: Subgroup;
 
   constructor(
-    algebra: typeof Element,
-    value: Element,
+    algebra: typeof AlgebraElement,
+    value: AlgebraElement,
     subgroup: SubgroupValue
   ) {
     super(algebra, value);
@@ -262,27 +224,14 @@ export class Temperament extends BaseTemperament {
     const jip_ = this.subgroup.jip();
     const metric = metric_ === undefined ? jip_.map(j => 1 / j) : metric_;
 
-    const jip = new this.algebra(Array(this.value.length).fill(0));
-    jip_.forEach((j, i) => (jip[i + 1] = j * metric[i]));
+    const jip = this.algebra.fromVector(jip_.map((j, i) => j * metric[i]));
 
-    const weightedValue_: number[] = [];
-    (this.algebra.describe().basis as string[]).forEach((label, index) => {
-      let component = this.value[index];
-      if (label[0] === 'e') {
-        label
-          .slice(1)
-          .split('')
-          .forEach(i => (component *= metric[parseInt(i) - 1]));
-      }
-      weightedValue_.push(component);
-    });
-    const weightedValue = new this.algebra(weightedValue_);
+    const weightedValue = this.value.applyWeights(metric);
 
-    const projected = jip.Dot(weightedValue).Div(weightedValue);
-    for (let i = 0; i < metric.length; ++i) {
-      projected[i + 1] /= metric[i];
-    }
-    const result = [...projected.slice(1, 1 + metric.length)];
+    const projected = jip.dot(weightedValue).div(weightedValue);
+    const result = [
+      ...(projected.vector() as Float32Array).map((p, i) => p / metric[i]),
+    ];
     if (primeMapping) {
       return this.subgroup.toPrimeMapping(result) as Mapping;
     }
@@ -304,13 +253,10 @@ export class Temperament extends BaseTemperament {
     subgroup_: SubgroupValue
   ) {
     const subgroup = new Subgroup(subgroup_);
-    const Clifford: typeof Element = (Algebra as any)(subgroup.basis.length);
-    const algebraSize = 1 << subgroup.basis.length;
+    const Clifford = Algebra(subgroup.basis.length);
 
     if (!vals.length) {
-      const scalar = new Clifford(Array(algebraSize).fill(0));
-      scalar[0] = 1;
-      return new Temperament(Clifford, scalar, subgroup);
+      return new Temperament(Clifford, Clifford.scalar(), subgroup);
     }
     const promotedVals = vals.map(val_ => {
       let val: Val;
@@ -319,13 +265,11 @@ export class Temperament extends BaseTemperament {
       } else {
         val = val_;
       }
-      const vector = Array(algebraSize).fill(0);
-      vector.splice(1, val.length, ...val);
-      return new Clifford(vector);
+      return Clifford.fromVector(val);
     });
     return new Temperament(
       Clifford,
-      promotedVals.reduce((a, b) => Clifford.Wedge(a, b)),
+      promotedVals.reduce((a, b) => wedge(a, b)),
       subgroup
     );
   }
@@ -340,11 +284,9 @@ export class Temperament extends BaseTemperament {
     } else {
       subgroup = new Subgroup(subgroup_);
     }
-    const Clifford: typeof Element = (Algebra as any)(subgroup.basis.length);
-    const algebraSize = 1 << subgroup.basis.length;
+    const Clifford = Algebra(subgroup.basis.length);
 
-    const pseudoScalar = new Clifford(Array(algebraSize).fill(0));
-    pseudoScalar[algebraSize - 1] = 1;
+    const pseudoScalar = Clifford.pseudoscalar();
     if (!commas.length) {
       return new Temperament(Clifford, pseudoScalar, subgroup);
     }
@@ -366,14 +308,12 @@ export class Temperament extends BaseTemperament {
         }
         comma = monzo;
       }
-      const vector = Array(algebraSize).fill(0);
-      vector.splice(1, comma.length, ...comma);
-      return new Clifford(vector).Mul(pseudoScalar);
+      return Clifford.fromVector(comma).mul(pseudoScalar);
     });
 
     return new Temperament(
       Clifford,
-      promotedCommas.reduce((a, b) => Clifford.Vee(a, b)),
+      promotedCommas.reduce((a, b) => vee(a, b)),
       subgroup
     );
   }
@@ -385,26 +325,20 @@ export class Temperament extends BaseTemperament {
   ) {
     const subgroup = new Subgroup(subgroup_);
     const dims = subgroup.basis.length;
-    const Clifford: typeof Element = (Algebra as any)(dims);
-    const algebraSize = 1 << dims;
+    const Clifford = Algebra(dims);
 
-    const jip1 = new Clifford(Array(algebraSize).fill(0));
     const jip = subgroup.jip();
-    jip.forEach((j, i) => (jip1[i + 1] = j / jip[0]));
+    const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
 
-    let end = 0;
-    for (let i = 0; i < rank; ++i) {
-      end += binomial(dims, i);
-    }
-
-    const vector = Array(algebraSize).fill(0);
-    vector.splice(
-      end - wedgiePrefix.length,
+    const paddedWedgie = Array(binomial(dims, rank - 1)).fill(0);
+    paddedWedgie.splice(
+      paddedWedgie.length - wedgiePrefix.length,
       wedgiePrefix.length,
       ...wedgiePrefix
     );
-    const value = new Clifford(vector).Wedge(jip1);
-    for (let i = 0; i < algebraSize; ++i) {
+
+    const value = Clifford.fromVector(paddedWedgie, rank - 1).wedge(jip1);
+    for (let i = 0; i < value.length; ++i) {
       value[i] = Math.round(value[i]);
     }
     return new Temperament(Clifford, value, subgroup);

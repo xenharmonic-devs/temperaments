@@ -531,7 +531,7 @@ export function monzoToColorComma(monzo: Monzo): string {
 
 // Get color name for a temperament of only one vanishing comma
 export function getSingleCommaColorName(temperament: Temperament) {
-  const commish = temperament.value.Dual;
+  const commish = temperament.value.dual().vector();
   const monzo: Monzo = Array(PSEUDO_EDO_MAPPING.length).fill(0);
   const primeIndices: number[] = [];
   temperament.subgroup.basis.forEach((maybePrime, i) => {
@@ -543,7 +543,7 @@ export function getSingleCommaColorName(temperament: Temperament) {
     if (index >= monzo.length) {
       throw new Error('Subgroup too complex');
     }
-    monzo[index] = commish[i + 1];
+    monzo[index] = commish[i];
   });
   const nats = dot(LOG_PRIMES, monzo);
   if (nats < 0) {

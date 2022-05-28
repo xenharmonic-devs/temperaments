@@ -50,7 +50,7 @@ describe('Temperament namer', () => {
     ];
     const temperament = Temperament.fromCommaList(commas, subgroup);
     temperament.canonize();
-    expect(getRank2GivenName(temperament, subgroup)).toBe('Haumea');
+    expect(getRank2GivenName(temperament)).toBe('Haumea');
   });
 });
 

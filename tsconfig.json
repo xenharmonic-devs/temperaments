@@ -3,9 +3,6 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
-    "paths": {
-      "*": ["./src/custom_types/*"],
-    },
     "strict": true,
     "moduleResolution": "node",
     "resolveJsonModule": false,

@@ -45,12 +45,14 @@
     "pretest": "npm run build",
     "posttest": "npm run lint",
     "test": "vitest",
+    "preenumerate": "npm run build",
     "enumerate": "node dist/scripts/enumerate_temperaments",
+    "precheck-redundant": "npm run build",
     "check-redundant": "node dist/scripts/check_redundant_names"
   },
   "dependencies": {
     "fraction.js": "^4.2.0",
-    "ganja.js": "^1.0.194",
-    "mathjs": "^10.6.0"
+    "mathjs": "^10.6.0",
+    "ts-geometric-algebra": "github:frostburn/ts-geometric-algebra"
   }
 }
