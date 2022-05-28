@@ -1,4 +1,4 @@
-import type {Monzo} from './monzo';
+import {dot, Monzo} from './monzo';
 import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
 import {binomial, gcd, iteratedEuclid} from './utils';
 import Fraction from 'fraction.js';
@@ -51,10 +51,11 @@ abstract class BaseTemperament {
   canonize() {
     let firstSign = 0;
     let commonFactor = 0;
-    for (let i = 0; i < this.value.length; ++i) {
+    const lexicographic = this.value.ganja();
+    for (let i = 0; i < lexicographic.length; ++i) {
       commonFactor = gcd(commonFactor, Math.abs(this.value[i]));
-      if (!firstSign && this.value[i]) {
-        firstSign = Math.sign(this.value[i]);
+      if (!firstSign && lexicographic[i]) {
+        firstSign = Math.sign(lexicographic[i]);
       }
     }
     if (!commonFactor) {
@@ -82,23 +83,19 @@ abstract class BaseTemperament {
 
   // Assumes this is canonized rank-2
   divisionsGenerator(): [number, Monzo] {
-    // TODO: Use monzo dots
     const equaveUnit = this.algebra.basisVector(0);
-    const equaveProj = equaveUnit.dot(this.value);
-    const generator = this.algebra.fromVector(
-      iteratedEuclid([...equaveProj.vector()])
-    );
-    const divisions = Math.abs(generator.dot(equaveProj).s);
+    const equaveProj = [...equaveUnit.dot(this.value).vector()];
+    const generator = iteratedEuclid([...equaveProj]);
+    const divisions = Math.abs(dot(generator, equaveProj));
 
-    return [divisions, [...generator.vector()]];
+    return [divisions, generator];
   }
 
   rankPrefix(rank: number): number[] {
     return [
-      ...(this.value.vector(rank) as Float32Array).slice(
-        0,
-        binomial(this.dimensions - 1, rank - 1)
-      ),
+      ...this.value
+        .vector(rank)
+        .slice(0, binomial(this.dimensions - 1, rank - 1)),
     ];
   }
 }
@@ -134,9 +131,7 @@ export class FreeTemperament extends BaseTemperament {
     const weightedValue = this.value.applyWeights(metric);
 
     const projected = jip.dot(weightedValue).div(weightedValue);
-    return [
-      ...(projected.vector() as Float32Array).map((p, i) => p / metric[i]),
-    ];
+    return [...projected.vector().map((p, i) => p / metric[i])];
   }
 
   toPOTE(metric?: Metric): Mapping {
@@ -229,9 +224,7 @@ export class Temperament extends BaseTemperament {
     const weightedValue = this.value.applyWeights(metric);
 
     const projected = jip.dot(weightedValue).div(weightedValue);
-    const result = [
-      ...(projected.vector() as Float32Array).map((p, i) => p / metric[i]),
-    ];
+    const result = [...projected.vector().map((p, i) => p / metric[i])];
     if (primeMapping) {
       return this.subgroup.toPrimeMapping(result) as Mapping;
     }
