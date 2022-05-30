@@ -52,7 +52,6 @@
   },
   "dependencies": {
     "fraction.js": "^4.2.0",
-    "mathjs": "^10.6.0",
     "ts-geometric-algebra": "github:frostburn/ts-geometric-algebra"
   }
 }

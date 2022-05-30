@@ -1,7 +1,6 @@
 import Fraction, {NumeratorDenominator} from 'fraction.js';
-import {flatten, lusolve} from 'mathjs';
 import {LOG_PRIMES, PRIMES} from './constants';
-import {dot, fractionToMonzo, type Monzo} from './monzo';
+import {fractionToMonzo, type Monzo} from './monzo';
 import {fromWarts, patentVal, toWarts} from './warts';
 
 export type Basis = Fraction[];
@@ -90,7 +89,7 @@ export class Subgroup {
     return toWarts(val, this.jip());
   }
 
-  toPrimeMapping(mapping_: number[]) {
+  toPrimeMapping(mapping: number[]) {
     const basisMonzos = this.basis.map(b => fractionToMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 
@@ -116,12 +115,45 @@ export class Subgroup {
     if (simple) {
       const result = LOG_PRIMES.slice(0, limit);
       simpleIndices.forEach(
-        (index, i) => (result[index] = mapping_[i] / basisMonzos[i][index])
+        (index, i) => (result[index] = mapping[i] / basisMonzos[i][index])
       );
       return result;
     }
 
-    // Calculate the full matrix and solve BasisMatrix * result = mapping_
+    // Same assumptions as in monzo conversion
+    // The result has "holes", but should work if the subgroup isn't too crazy
+    const result = Array(limit).fill(0);
+    for (let i = 0; i < basisMonzos.length; ++i) {
+      let slotted = false;
+      for (let j = 0; j < basisMonzos[i].length; ++j) {
+        let slottable = true;
+        if (basisMonzos[i][j]) {
+          for (let k = 0; k < basisMonzos.length; ++k) {
+            if (k === i) {
+              continue;
+            }
+            if (basisMonzos[k][j]) {
+              slottable = false;
+              break;
+            }
+          }
+          if (slottable) {
+            result[j] = mapping[i] / basisMonzos[i][j];
+            slotted = true;
+            break;
+          }
+        }
+      }
+      if (!slotted) {
+        throw new Error('Failed to produce a valid prime mapping');
+      }
+    }
+    return result;
+
+    /*
+    *** Generic Algorithm but needs mathjs ***
+
+    // Calculate the full matrix and solve BasisMatrix * result = mapping
     const missing = new Set<number>();
     for (let i = 0; i < limit; ++i) {
       missing.add(i);
@@ -141,11 +173,12 @@ export class Subgroup {
       extraBasis[index] = 1;
       basisMonzos.push(extraBasis);
     }
-    const mapping = [...mapping_];
-    while (mapping.length < limit) {
-      mapping.push(dot(basisMonzos[mapping.length], LOG_PRIMES));
+    const mapping_ = [...mapping];
+    while (mapping_.length < limit) {
+      mapping.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
     }
-    return flatten(lusolve(basisMonzos, mapping));
+    return flatten(lusolve(basisMonzos, mapping_));
+    */
   }
 
   static inferPrimeSubgroup(commas: (Monzo | FractionValue)[]) {
