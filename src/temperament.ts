@@ -14,10 +14,10 @@ export type Val = number[];
 export type Comma = number[];
 
 // The weighting vector
-// I think ganja.js ignores metric magnitude so we pre- and post-process
+// Temperaments are stored as integers; Applied as needed.
 export type Metric = number[];
 
-// Parse a subgroup like 2.15.11/7 to a list of logarithms
+// Parse a subgroup string like 2.15.11/7 to a list of logarithms
 export function parseJIP(token: string) {
   return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
 }
@@ -30,6 +30,20 @@ export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
 }
 
+const ALGEBRA_CACHE: Map<number, typeof AlgebraElement> = new Map();
+function getAlgebra(dimensions: number) {
+  if (ALGEBRA_CACHE.has(dimensions)) {
+    return ALGEBRA_CACHE.get(dimensions)!;
+  }
+  const algebra = Algebra(dimensions);
+  ALGEBRA_CACHE.set(dimensions, algebra);
+  return algebra;
+}
+
+export function clearCache() {
+  ALGEBRA_CACHE.clear();
+}
+
 abstract class BaseTemperament {
   algebra: typeof AlgebraElement; // Clifford Algebra
   value: AlgebraElement; // Multivector of the Clifford Algebra
@@ -40,12 +54,7 @@ abstract class BaseTemperament {
   }
 
   isNil() {
-    for (let i = 0; i < this.value.length; ++i) {
-      if (this.value[i]) {
-        return false;
-      }
-    }
-    return true;
+    return this.value.isNil();
   }
 
   canonize() {
@@ -73,9 +82,6 @@ abstract class BaseTemperament {
   equals(other: BaseTemperament) {
     return this.value.equals(other.value);
   }
-
-  // abstract toTenneyEuclid(metric_?: Metric): Mapping;
-  // abstract toPOTE(metric?: Metric): Mapping;
 
   get dimensions() {
     return this.algebra.dimensions;
@@ -115,7 +121,6 @@ export class FreeTemperament extends BaseTemperament {
       return false;
     }
     for (let i = 0; i < this.jip.length; ++i) {
-      // XXX: This probably should be a check for closeness instead
       if (this.jip[i] !== other.jip[i]) {
         return false;
       }
@@ -130,7 +135,7 @@ export class FreeTemperament extends BaseTemperament {
 
     const weightedValue = this.value.applyWeights(metric);
 
-    const projected = jip.dot(weightedValue).div(weightedValue);
+    const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     return [...projected.vector().map((p, i) => p / metric[i])];
   }
 
@@ -141,7 +146,7 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   static fromValList(vals: Val[], jip: Mapping) {
-    const Clifford = Algebra(jip.length);
+    const Clifford = getAlgebra(jip.length);
 
     if (!vals.length) {
       return new FreeTemperament(Clifford, Clifford.scalar(), jip);
@@ -155,15 +160,14 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   static fromCommaList(commas: Comma[], jip: Mapping) {
-    const Clifford = Algebra(jip.length);
+    const Clifford = getAlgebra(jip.length);
 
-    const pseudoScalar = Clifford.pseudoscalar();
     if (!commas.length) {
-      return new FreeTemperament(Clifford, pseudoScalar, jip);
+      return new FreeTemperament(Clifford, Clifford.pseudoscalar(), jip);
     }
 
     const promotedCommas = commas.map(comma =>
-      Clifford.fromVector(comma).mul(pseudoScalar)
+      Clifford.fromVector(comma).dual()
     );
 
     return new FreeTemperament(
@@ -175,7 +179,7 @@ export class FreeTemperament extends BaseTemperament {
 
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
     const dims = jip.length;
-    const Clifford = Algebra(dims);
+    const Clifford = getAlgebra(dims);
 
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
 
@@ -223,7 +227,7 @@ export class Temperament extends BaseTemperament {
 
     const weightedValue = this.value.applyWeights(metric);
 
-    const projected = jip.dot(weightedValue).div(weightedValue);
+    const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     const result = [...projected.vector().map((p, i) => p / metric[i])];
     if (primeMapping) {
       return this.subgroup.toPrimeMapping(result) as Mapping;
@@ -246,7 +250,7 @@ export class Temperament extends BaseTemperament {
     subgroup_: SubgroupValue
   ) {
     const subgroup = new Subgroup(subgroup_);
-    const Clifford = Algebra(subgroup.basis.length);
+    const Clifford = getAlgebra(subgroup.basis.length);
 
     if (!vals.length) {
       return new Temperament(Clifford, Clifford.scalar(), subgroup);
@@ -277,11 +281,10 @@ export class Temperament extends BaseTemperament {
     } else {
       subgroup = new Subgroup(subgroup_);
     }
-    const Clifford = Algebra(subgroup.basis.length);
+    const Clifford = getAlgebra(subgroup.basis.length);
 
-    const pseudoScalar = Clifford.pseudoscalar();
     if (!commas.length) {
-      return new Temperament(Clifford, pseudoScalar, subgroup);
+      return new Temperament(Clifford, Clifford.pseudoscalar(), subgroup);
     }
 
     const promotedCommas = commas.map(comma_ => {
@@ -301,7 +304,7 @@ export class Temperament extends BaseTemperament {
         }
         comma = monzo;
       }
-      return Clifford.fromVector(comma).mul(pseudoScalar);
+      return Clifford.fromVector(comma).dual();
     });
 
     return new Temperament(
@@ -318,7 +321,7 @@ export class Temperament extends BaseTemperament {
   ) {
     const subgroup = new Subgroup(subgroup_);
     const dims = subgroup.basis.length;
-    const Clifford = Algebra(dims);
+    const Clifford = getAlgebra(dims);
 
     const jip = subgroup.jip();
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));

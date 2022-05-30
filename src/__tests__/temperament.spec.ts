@@ -49,15 +49,9 @@ describe('Temperament', () => {
     const tritave = [0, 1, 0];
     const pentave = [0, 0, 1];
 
-    // I would've expected rank 0 temperament to map everything to unity...
-    // expect(dot(trivial, octave)).toBe(0);
-    // expect(dot(trivial, tritave)).toBe(0);
-    // expect(dot(trivial, pentave)).toBe(0);
-
-    // ...but instead it produces just intonation.
-    expect(dot(trivial, octave)).toBeCloseTo(Math.LN2);
-    expect(dot(trivial, tritave)).toBeCloseTo(Math.log(3));
-    expect(dot(trivial, pentave)).toBeCloseTo(Math.log(5));
+    expect(dot(trivial, octave)).toBe(0);
+    expect(dot(trivial, tritave)).toBe(0);
+    expect(dot(trivial, pentave)).toBe(0);
   });
 
   it('reduces to just intonation when given no commas', () => {
@@ -243,8 +237,8 @@ describe('Temperament', () => {
 
     for (let i = 0; i < 2 ** 3; ++i) {
       expect(meantone.value[i]).toBe(Math.floor(meantone.value[i]));
-      expect(twelveAndNineteen.value[i]).toBe(meantone.value[i]);
-      expect(twelveAndThirtyOne.value[i]).toBe(meantone.value[i]);
+      expect(twelveAndNineteen.value[i]).toBeCloseTo(meantone.value[i]);
+      expect(twelveAndThirtyOne.value[i]).toBeCloseTo(meantone.value[i]);
       expect(nineteenAndThirtyOne.value[i]).toBeCloseTo(-meantone.value[i]);
     }
   });
@@ -262,7 +256,7 @@ describe('Temperament', () => {
 
     for (let i = 0; i < 2 ** 4; ++i) {
       expect(marvel.value[i]).toBe(Math.floor(marvel.value[i]));
-      expect(nineAndTenAndTwelve.value[i]).toBe(marvel.value[i]);
+      expect(nineAndTenAndTwelve.value[i]).toBeCloseTo(marvel.value[i]);
     }
   });
 
