@@ -1,8 +1,8 @@
 import {dot, Monzo} from './monzo';
 import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
-import {binomial, gcd, iteratedEuclid} from './utils';
+import {binomial, gcd, iteratedEuclid, FractionValue} from './utils';
 import Fraction from 'fraction.js';
-import {Subgroup, SubgroupValue, FractionValue} from './subgroup';
+import {Subgroup, SubgroupValue} from './subgroup';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];

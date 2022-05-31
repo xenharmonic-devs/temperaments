@@ -1,7 +1,11 @@
 import {describe, it, expect} from 'vitest';
 import Fraction from 'fraction.js';
 
-import {numberToMonzoAndResidual, fractionToMonzoAndResidual} from '../monzo';
+import {
+  numberToMonzoAndResidual,
+  fractionToMonzoAndResidual,
+  fractionToMonzo,
+} from '../monzo';
 
 describe('Number to monzo converter', () => {
   it('can break down an integer to its prime components', () => {
@@ -31,5 +35,13 @@ describe('Fraction to monzo converter', () => {
         .mul(5 ** monzo[2])
         .equals(new Fraction(45, 32))
     ).toBeTruthy();
+  });
+
+  it('supports fractions as strings', () => {
+    const porcupineComma = fractionToMonzo('250/243');
+    expect(porcupineComma.length).toBe(3);
+    expect(porcupineComma[0]).toBe(1);
+    expect(porcupineComma[1]).toBe(-5);
+    expect(porcupineComma[2]).toBe(3);
   });
 });

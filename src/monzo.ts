@@ -1,5 +1,6 @@
 import {PRIMES} from './constants';
 import Fraction from 'fraction.js';
+import {FractionValue} from './utils';
 
 // No interpretation in Geometric Algebra
 export type Monzo = number[];
@@ -67,9 +68,11 @@ export function numberToMonzo(n: number) {
 }
 
 export function fractionToMonzoAndResidual(
-  fraction: Fraction,
+  fraction: FractionValue,
   numberOfComponents: number
 ): [Monzo, Fraction] {
+  fraction = new Fraction(fraction);
+
   let numerator = fraction.n;
   let denominator = fraction.d;
 
@@ -88,15 +91,17 @@ export function fractionToMonzoAndResidual(
   }
 
   const residual = new Fraction({
-    s: fraction.s,
+    s: fraction instanceof Fraction ? fraction.s : 1,
     n: numerator,
     d: denominator,
   });
   return [result, residual];
 }
 
-export function fractionToMonzo(fraction: Fraction) {
-  if (fraction.s < 0) {
+export function fractionToMonzo(fraction: FractionValue) {
+  fraction = new Fraction(fraction);
+
+  if (fraction instanceof Fraction && fraction.s < 0) {
     throw new Error('Cannot convert negative fraction to monzo');
   }
   let numerator = fraction.n;

@@ -1,16 +1,10 @@
-import Fraction, {NumeratorDenominator} from 'fraction.js';
+import Fraction from 'fraction.js';
 import {LOG_PRIMES, PRIMES} from './constants';
 import {fractionToMonzo, type Monzo} from './monzo';
+import {FractionValue} from './utils';
 import {fromWarts, patentVal, toWarts} from './warts';
 
 export type Basis = Fraction[];
-
-export type FractionValue =
-  | Fraction
-  | number
-  | string
-  | [number | string, number | string]
-  | NumeratorDenominator;
 
 export type SubgroupValue = number | string | number[] | Basis | Subgroup;
 

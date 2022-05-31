@@ -1,3 +1,12 @@
+import Fraction, {NumeratorDenominator} from 'fraction.js';
+
+export type FractionValue =
+  | Fraction
+  | number
+  | string
+  | [number | string, number | string]
+  | NumeratorDenominator;
+
 export function arraysEqual(a: any[], b: any[]) {
   if (a === b) {
     return true;
