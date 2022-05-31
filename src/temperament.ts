@@ -3,6 +3,7 @@ import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
 import {binomial, gcd, iteratedEuclid, FractionValue} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue} from './subgroup';
+import {fromWarts} from './warts';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];
@@ -17,6 +18,15 @@ export type Comma = number[];
 // Temperaments are stored as integers; Applied as needed.
 export type Metric = number[];
 
+export type PitchUnits = 'ratio' | 'cents' | 'nats';
+
+export type TuningOptions = {
+  units?: PitchUnits;
+  pureOctaves?: boolean;
+  primeMapping?: boolean;
+  metric?: Metric;
+};
+
 // Parse a subgroup string like 2.15.11/7 to a list of logarithms
 export function parseJIP(token: string) {
   return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
@@ -28,6 +38,28 @@ export function natsToCents(nats: number) {
 
 export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
+}
+
+function resolveInterval(
+  interval: FractionValue | Monzo,
+  subgroup: Subgroup,
+  strip = false
+): Monzo {
+  if (Array.isArray(interval) && interval.length > 2) {
+    if (strip) {
+      return subgroup.strip(interval as Monzo);
+    } else {
+      return interval as Monzo;
+    }
+  } else {
+    const [monzo, residual] = subgroup.toMonzoAndResidual(
+      interval as FractionValue
+    );
+    if (!residual.equals(1)) {
+      throw new Error('Interval outside subgroup');
+    }
+    return monzo;
+  }
 }
 
 const ALGEBRA_CACHE: Map<number, typeof AlgebraElement> = new Map();
@@ -115,6 +147,25 @@ export class FreeTemperament extends BaseTemperament {
     this.jip = jip;
   }
 
+  steps(interval: Monzo): number {
+    return this.value.star(this.algebra.fromVector(interval)).s;
+  }
+
+  tune(interval: Monzo, options?: TuningOptions): number {
+    options = options || {};
+    const units = options.units;
+    options.units = 'nats';
+    const result = dot(this.getMapping(options), interval);
+    options.units = units;
+    if (units === 'nats') {
+      return result;
+    }
+    if (units === 'ratio') {
+      return Math.exp(result);
+    }
+    return natsToCents(result);
+  }
+
   // Only checks numerical equality, canonize your inputs beforehand
   equals(other: FreeTemperament) {
     if (this.jip.length !== other.jip.length) {
@@ -128,30 +179,54 @@ export class FreeTemperament extends BaseTemperament {
     return super.equals(other);
   }
 
-  toTenneyEuclid(metric_?: Metric): Mapping {
-    const metric = metric_ === undefined ? this.jip.map(j => 1 / j) : metric_;
+  getMapping(options?: TuningOptions): Mapping {
+    options = options || {};
+
+    if (options.primeMapping === true) {
+      throw new Error('Free temperaments cannot be interpreted as primes');
+    }
+
+    const metric = options.metric || this.jip.map(j => 1 / j);
 
     const jip = this.algebra.fromVector(this.jip.map((j, i) => j * metric[i]));
 
     const weightedValue = this.value.applyWeights(metric);
 
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
-    return [...projected.vector().map((p, i) => p / metric[i])];
+    const mapping = [...projected.vector().map((p, i) => p / metric[i])];
+
+    if (options.pureOctaves !== false) {
+      const purifier = this.jip[0] / mapping[0];
+      for (let i = 0; i < mapping.length; ++i) {
+        mapping[i] *= purifier;
+      }
+    }
+    if (options.units === 'nats') {
+      return mapping;
+    }
+    if (options.units === 'ratio') {
+      return mapping.map(component => Math.exp(component));
+    }
+    return mapping.map(component => natsToCents(component));
   }
 
-  toPOTE(metric?: Metric): Mapping {
-    const result = this.toTenneyEuclid(metric);
-    const purifier = this.jip[0] / result[0];
-    return result.map(component => component * purifier);
-  }
-
-  static fromValList(vals: Val[], jip: Mapping) {
+  static fromValList(vals: (Val | number | string)[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
     if (!vals.length) {
       return new FreeTemperament(Clifford, Clifford.scalar(), jip);
     }
-    const promotedVals = vals.map(val => Clifford.fromVector(val));
+
+    const promotedVals = vals.map(val_ => {
+      let val: Val;
+      if (typeof val_ === 'number' || typeof val_ === 'string') {
+        val = fromWarts(val_, jip);
+      } else {
+        val = val_;
+      }
+      return Clifford.fromVector(val);
+    });
+
     return new FreeTemperament(
       Clifford,
       promotedVals.reduce((a, b) => wedge(a, b)),
@@ -211,6 +286,28 @@ export class Temperament extends BaseTemperament {
     this.subgroup = new Subgroup(subgroup);
   }
 
+  steps(interval: FractionValue | Monzo, primeMapping = false): number {
+    const monzo = resolveInterval(interval, this.subgroup, primeMapping);
+    return this.value.star(this.algebra.fromVector(monzo)).s;
+  }
+
+  tune(interval: Monzo, options?: TuningOptions): number {
+    options = options || {};
+    const units = options.units;
+    const primeMapping = !!options.primeMapping;
+    const monzo = resolveInterval(interval, this.subgroup, primeMapping);
+    options.units = 'nats';
+    const result = dot(this.getMapping(options), monzo);
+    options.units = units;
+    if (units === 'nats') {
+      return result;
+    }
+    if (units === 'ratio') {
+      return Math.exp(result);
+    }
+    return natsToCents(result);
+  }
+
   // Only checks numerical equality, canonize your inputs beforehand
   equals(other: Temperament) {
     if (!this.subgroup.equals(other.subgroup)) {
@@ -219,30 +316,31 @@ export class Temperament extends BaseTemperament {
     return super.equals(other);
   }
 
-  toTenneyEuclid(primeMapping = false, metric_?: Metric): Mapping {
+  getMapping(options?: TuningOptions): Mapping {
+    options = options || {};
     const jip_ = this.subgroup.jip();
-    const metric = metric_ === undefined ? jip_.map(j => 1 / j) : metric_;
+    const metric = options.metric || jip_.map(j => 1 / j);
 
     const jip = this.algebra.fromVector(jip_.map((j, i) => j * metric[i]));
 
     const weightedValue = this.value.applyWeights(metric);
 
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
-    const result = [...projected.vector().map((p, i) => p / metric[i])];
-    if (primeMapping) {
-      return this.subgroup.toPrimeMapping(result) as Mapping;
+    let mapping = [...projected.vector().map((p, i) => p / metric[i])];
+    if (options.pureOctaves !== false) {
+      const purifier = Math.log(this.subgroup.basis[0].valueOf()) / mapping[0];
+      mapping = mapping.map(component => component * purifier);
     }
-    return result;
-  }
-
-  toPOTE(primeMapping = false, metric?: Metric): Mapping {
-    let result = this.toTenneyEuclid(false, metric);
-    const purifier = Math.log(this.subgroup.basis[0].valueOf()) / result[0];
-    result = result.map(component => component * purifier);
-    if (primeMapping) {
-      return this.subgroup.toPrimeMapping(result) as Mapping;
+    if (options.primeMapping) {
+      mapping = this.subgroup.toPrimeMapping(mapping);
     }
-    return result;
+    if (options.units === 'nats') {
+      return mapping;
+    }
+    if (options.units === 'ratio') {
+      return mapping.map(component => Math.exp(component));
+    }
+    return mapping.map(component => natsToCents(component));
   }
 
   static fromValList(
@@ -287,25 +385,11 @@ export class Temperament extends BaseTemperament {
       return new Temperament(Clifford, Clifford.pseudoscalar(), subgroup);
     }
 
-    const promotedCommas = commas.map(comma_ => {
-      let comma: Comma;
-      if (Array.isArray(comma_) && comma_.length > 2) {
-        if (subgroup_ === undefined) {
-          comma = subgroup.strip(comma_ as Monzo);
-        } else {
-          comma = comma_ as Comma;
-        }
-      } else {
-        const [monzo, residual] = subgroup.toMonzoAndResidual(
-          comma_ as FractionValue
-        );
-        if (!residual.equals(1)) {
-          throw new Error('Comma outside subgroup');
-        }
-        comma = monzo;
-      }
-      return Clifford.fromVector(comma).dual();
-    });
+    const promotedCommas = commas.map(comma =>
+      Clifford.fromVector(
+        resolveInterval(comma, subgroup, subgroup_ === undefined)
+      ).dual()
+    );
 
     return new Temperament(
       Clifford,

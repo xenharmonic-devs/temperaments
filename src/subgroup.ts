@@ -83,7 +83,7 @@ export class Subgroup {
     return toWarts(val, this.jip());
   }
 
-  toPrimeMapping(mapping: number[]) {
+  toPrimeMapping(mapping: number[]): number[] {
     const basisMonzos = this.basis.map(b => fractionToMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 

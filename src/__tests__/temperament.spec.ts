@@ -8,12 +8,22 @@ import {mmod} from '../utils';
 import {Subgroup} from '../subgroup';
 
 describe('Temperament', () => {
+  it('supports equal temperaments', () => {
+    const edo12 = Temperament.fromValList([12], 5);
+
+    const majorThird = edo12.steps('5/4');
+    const perfectFifth = edo12.steps('3/2');
+
+    expect(majorThird).toBe(4);
+    expect(perfectFifth).toBe(7);
+  });
+
   it('calculates meantone from vals', () => {
     const subgroup = new Subgroup([2, 3, 5]);
     const edo12 = [12, 19, 28];
     const edo19 = [19, 30, 44];
     const temperament = Temperament.fromValList([edo12, edo19], subgroup);
-    const meantone = temperament.toPOTE();
+    const meantone = temperament.getMapping();
 
     const syntonicComma = fractionToMonzoAndResidual(
       new Fraction(81, 80),
@@ -23,15 +33,15 @@ describe('Temperament', () => {
     const octave = [1, 0, 0];
 
     expect(dot(meantone, syntonicComma)).toBeCloseTo(0);
-    expect(dot(meantone, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
+    expect(dot(meantone, octave)).toBeCloseTo(1200);
+    expect(dot(meantone, fifth)).toBeCloseTo(696.239);
   });
 
   it('calculates meantone from commas', () => {
     const subgroup = new Subgroup(5);
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
     const temperament = Temperament.fromCommaList([syntonicComma], subgroup);
-    const meantone = temperament.toPOTE();
+    const meantone = temperament.getMapping({units: 'nats'});
 
     const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 3)[0];
     const octave = [1, 0, 0];
@@ -44,7 +54,7 @@ describe('Temperament', () => {
   it('reduces to the trivial temperament when given no vals', () => {
     const subgroup = new Subgroup(5);
     const temperament = Temperament.fromValList([], subgroup);
-    const trivial = temperament.toTenneyEuclid();
+    const trivial = temperament.getMapping({pureOctaves: false});
     const octave = [1, 0, 0];
     const tritave = [0, 1, 0];
     const pentave = [0, 0, 1];
@@ -56,7 +66,10 @@ describe('Temperament', () => {
 
   it('reduces to just intonation when given no commas', () => {
     const temperament = Temperament.fromCommaList([], 5);
-    const justIntonation = temperament.toTenneyEuclid();
+    const justIntonation = temperament.getMapping({
+      pureOctaves: false,
+      units: 'nats',
+    });
     const octave = [1, 0, 0];
     const tritave = [0, 1, 0];
     const pentave = [0, 0, 1];
@@ -70,7 +83,7 @@ describe('Temperament', () => {
     const marvelComma = fractionToMonzo(new Fraction(225, 224));
     const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
     const temperament = Temperament.fromCommaList([marvelComma, gamelisma], 7);
-    const miracle = temperament.toPOTE();
+    const miracle = temperament.getMapping();
 
     const largeSecor = fractionToMonzo(new Fraction(15, 14));
     const smallSecor = fractionToMonzoAndResidual(new Fraction(16, 15), 4)[0];
@@ -78,14 +91,14 @@ describe('Temperament', () => {
 
     expect(dot(miracle, marvelComma)).toBeCloseTo(0);
     expect(dot(miracle, gamelisma)).toBeCloseTo(0);
-    expect(dot(miracle, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(miracle, smallSecor))).toBeCloseTo(116.675);
-    expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
+    expect(dot(miracle, octave)).toBeCloseTo(1200);
+    expect(dot(miracle, smallSecor)).toBeCloseTo(116.675);
+    expect(temperament.tune(largeSecor)).toBeCloseTo(116.675);
   });
 
   it('calculates miracle from vals', () => {
     const temperament = Temperament.fromValList([10, 21], 7);
-    const miracle = temperament.toPOTE();
+    const miracle = temperament.getMapping();
 
     const marvelComma = fractionToMonzo(new Fraction(225, 224));
     const gamelisma = fractionToMonzo(new Fraction(1029, 1024));
@@ -95,21 +108,21 @@ describe('Temperament', () => {
 
     expect(dot(miracle, marvelComma)).toBeCloseTo(0);
     expect(dot(miracle, gamelisma)).toBeCloseTo(0);
-    expect(dot(miracle, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(miracle, smallSecor))).toBeCloseTo(116.675);
-    expect(natsToCents(dot(miracle, largeSecor))).toBeCloseTo(116.675);
+    expect(dot(miracle, octave)).toBeCloseTo(1200);
+    expect(dot(miracle, smallSecor)).toBeCloseTo(116.675);
+    expect(dot(miracle, largeSecor)).toBeCloseTo(116.675);
   });
 
   it('calculates orgone from commas', () => {
     const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
     const temperament = Temperament.fromCommaList(['65536/65219']);
-    const orgone = temperament.toPOTE(true);
+    const orgone = temperament.getMapping({primeMapping: true});
     const smitone = fractionToMonzo(new Fraction(77, 64));
     const octave = [1, 0, 0, 0, 0];
 
     expect(dot(orgone, orgonisma)).toBeCloseTo(0);
-    expect(dot(orgone, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
+    expect(dot(orgone, octave)).toBeCloseTo(1200);
+    expect(dot(orgone, smitone)).toBeCloseTo(323.372);
   });
 
   it('calculates orgone from vals', () => {
@@ -117,53 +130,53 @@ describe('Temperament', () => {
     const edo11 = subgroup.patentVal(11);
     const edo18 = subgroup.patentVal(18);
     const temperament = Temperament.fromValList([edo11, edo18], subgroup);
-    const orgone = temperament.toPOTE(true);
+    const orgone = temperament.getMapping({primeMapping: true});
     const orgonisma = fractionToMonzo(new Fraction(65536, 65219));
     const smitone = fractionToMonzo(new Fraction(77, 64));
     const octave = [1, 0, 0, 0, 0];
 
     expect(dot(orgone, orgonisma)).toBeCloseTo(0);
-    expect(dot(orgone, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(orgone, smitone))).toBeCloseTo(323.372);
+    expect(dot(orgone, octave)).toBeCloseTo(1200);
+    expect(dot(orgone, smitone)).toBeCloseTo(323.372);
   });
 
   it('calculates blackwood in the 2.3 subgroup', () => {
     const temperament = Temperament.fromCommaList([new Fraction(256, 243)]);
-    const blackwood = temperament.toPOTE();
+    const blackwood = temperament.getMapping();
     const fifth = fractionToMonzo(new Fraction(3, 2));
 
     expect(blackwood.length).toBe(2);
-    expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
+    expect(dot(blackwood, fifth)).toBeCloseTo((3 * 1200) / 5);
   });
 
   it('calculates blackwood in the 2.3.5 subgroup', () => {
     const subgroup = new Subgroup(5);
     const limma = subgroup.toMonzoAndResidual(new Fraction(256, 243))[0];
     const temperament = Temperament.fromCommaList([limma], subgroup);
-    const blackwood = temperament.toPOTE();
+    const blackwood = temperament.getMapping();
     const majorThird = fractionToMonzo(new Fraction(5, 4));
     const fifth = [-1, 1, 0];
 
     expect(blackwood.length).toBe(3);
-    expect(dot(blackwood, fifth)).toBeCloseTo((3 * Math.LN2) / 5);
-    expect(natsToCents(dot(blackwood, majorThird))).toBeCloseTo(399.594);
+    expect(dot(blackwood, fifth)).toBeCloseTo((3 * 1200) / 5);
+    expect(dot(blackwood, majorThird)).toBeCloseTo(399.594);
   });
 
   it('calculates arcturus in the 3.5.7 subgroup', () => {
     const temperament = Temperament.fromCommaList([[15625, 15309]]);
-    const arcturus = temperament.toPOTE();
+    const arcturus = temperament.getMapping();
     const majorSixth = temperament.subgroup.toMonzoAndResidual(
       new Fraction(5, 3)
     )[0];
 
     expect(arcturus.length).toBe(3);
-    expect(natsToCents(dot(arcturus, majorSixth))).toBeCloseTo(878.042);
+    expect(dot(arcturus, majorSixth)).toBeCloseTo(878.042);
   });
 
   it('calculates starling rank 3 from a comma', () => {
     const comma = fractionToMonzo(new Fraction(126, 125));
     const temperament = Temperament.fromCommaList([comma]);
-    const starling = temperament.toTenneyEuclid();
+    const starling = temperament.getMapping({pureOctaves: false});
     const septimalQuarterTone = fractionToMonzo(new Fraction(36, 35));
     const jubilisma = fractionToMonzo(new Fraction(50, 49));
     const octave = [1, 0, 0, 0];
@@ -172,8 +185,8 @@ describe('Temperament', () => {
     expect(dot(starling, septimalQuarterTone)).toBeCloseTo(
       dot(starling, jubilisma)
     );
-    expect(natsToCents(dot(starling, octave))).toBeGreaterThan(1199);
-    expect(natsToCents(dot(starling, octave))).toBeLessThan(1200);
+    expect(dot(starling, octave)).toBeGreaterThan(1199);
+    expect(dot(starling, octave)).toBeLessThan(1200);
   });
 
   it('calculates starling rank 3 from a list of vals', () => {
@@ -185,14 +198,14 @@ describe('Temperament', () => {
       [edo12, edo27, edo31],
       subgroup
     );
-    const starling = temperament.toTenneyEuclid();
+    const starling = temperament.getMapping({pureOctaves: false});
     const comma = fractionToMonzo(new Fraction(126, 125));
     const octave = [1, 0, 0, 0];
 
     expect(starling.length).toBe(4);
     expect(dot(starling, comma)).toBeCloseTo(0);
-    expect(natsToCents(dot(starling, octave))).toBeGreaterThan(1199);
-    expect(natsToCents(dot(starling, octave))).toBeLessThan(1200);
+    expect(dot(starling, octave)).toBeGreaterThan(1199);
+    expect(dot(starling, octave)).toBeLessThan(1200);
     expect(dot(edo12, comma)).toBe(0);
     expect(dot(edo27, comma)).toBe(0);
     expect(dot(edo31, comma)).toBe(0);
@@ -200,19 +213,19 @@ describe('Temperament', () => {
 
   it('calculates marvel rank 3 from a comma', () => {
     const temperament = Temperament.fromCommaList(['225/224']);
-    const marvel = temperament.toPOTE();
+    const marvel = temperament.getMapping();
     const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 4)[0];
     const majorThird = fractionToMonzoAndResidual(new Fraction(5, 4), 4)[0];
 
     expect(marvel.length).toBe(4);
-    expect(natsToCents(dot(marvel, fifth))).toBeCloseTo(700.4075);
-    expect(natsToCents(dot(marvel, majorThird))).toBeCloseTo(383.6376);
+    expect(dot(marvel, fifth)).toBeCloseTo(700.4075);
+    expect(dot(marvel, majorThird)).toBeCloseTo(383.6376);
   });
 
   it('calculates keenanismic rank 4 from a comma', () => {
     const keenanisma = fractionToMonzo(new Fraction(385, 384));
     const temperament = Temperament.fromCommaList([keenanisma]);
-    const keenanismic = temperament.toPOTE();
+    const keenanismic = temperament.getMapping();
 
     expect(keenanismic.length).toBe(5);
     expect(dot(keenanismic, keenanisma)).toBeCloseTo(0);
@@ -220,7 +233,7 @@ describe('Temperament', () => {
 
   it('calculates keenanismic rank 4 from a list of vals', () => {
     const temperament = Temperament.fromValList([9, 10, '12e', 15], 11);
-    const keenanismic = temperament.toPOTE();
+    const keenanismic = temperament.getMapping();
 
     const keenanisma = fractionToMonzo(new Fraction(385, 384));
     expect(keenanismic.length).toBe(5);
@@ -285,13 +298,11 @@ describe('Temperament', () => {
     expect(divisions).toBe(1);
     expect(generator.length).toBe(3);
 
-    const meantone = temperament.toPOTE();
+    const meantone = temperament.getMapping();
     const poteGenerator = 696.239;
 
     // XXX: This is technically not the correct check. 1200 - poteGenerator is also valid.
-    expect(natsToCents(dot(meantone, generator)) % 1200).toBeCloseTo(
-      poteGenerator
-    );
+    expect(dot(meantone, generator) % 1200).toBeCloseTo(poteGenerator);
   });
 
   it('can figure out the period and a generator for orgone', () => {
@@ -302,13 +313,11 @@ describe('Temperament', () => {
     expect(divisions).toBe(1);
     expect(generator.length).toBe(3);
 
-    const orgone = temperament.toPOTE();
+    const orgone = temperament.getMapping();
     const poteGenerator = 323.372;
 
     // XXX: See?
-    expect(natsToCents(dot(orgone, generator)) % 1200).toBeCloseTo(
-      1200 - poteGenerator
-    );
+    expect(dot(orgone, generator) % 1200).toBeCloseTo(1200 - poteGenerator);
   });
 
   it('can figure out the period and a generator for blackwood', () => {
@@ -320,11 +329,9 @@ describe('Temperament', () => {
     expect(divisions).toBe(5);
     expect(generator.length).toBe(3);
 
-    const blackwood = temperament.toPOTE();
+    const blackwood = temperament.getMapping();
     const poteGenerator = 399.594;
-    expect(natsToCents(dot(blackwood, generator)) % 240).toBeCloseTo(
-      poteGenerator % 240
-    );
+    expect(dot(blackwood, generator) % 240).toBeCloseTo(poteGenerator % 240);
   });
 
   it('can figure out the period and a generator for augmented', () => {
@@ -336,11 +343,9 @@ describe('Temperament', () => {
     expect(divisions).toBe(3);
     expect(generator.length).toBe(3);
 
-    const augmented = temperament.toPOTE();
+    const augmented = temperament.getMapping();
     const poteGenerator = 706.638;
-    expect(natsToCents(dot(augmented, generator)) % 400).toBeCloseTo(
-      poteGenerator % 400
-    );
+    expect(dot(augmented, generator) % 400).toBeCloseTo(poteGenerator % 400);
   });
 
   it('can figure out the period and a generator for miracle', () => {
@@ -350,12 +355,10 @@ describe('Temperament', () => {
     expect(divisions).toBe(1);
     expect(generator.length).toBe(4);
 
-    const miracle = temperament.toPOTE();
+    const miracle = temperament.getMapping();
     const poteGenerator = 116.675;
 
-    expect(natsToCents(dot(miracle, generator)) % 1200).toBeCloseTo(
-      1200 - poteGenerator
-    );
+    expect(dot(miracle, generator) % 1200).toBeCloseTo(1200 - poteGenerator);
   });
 
   it('can recover semaphore from its prefix', () => {
@@ -420,7 +423,7 @@ describe('Temperament', () => {
       [islandComma, password],
       subgroup
     );
-    const pinkan = temperament.toPOTE();
+    const pinkan = temperament.getMapping();
 
     const [d, g] = temperament.divisionsGenerator();
 
@@ -430,27 +433,42 @@ describe('Temperament', () => {
     expect(d).toBe(1);
     expect(dot(pinkan, islandComma)).toBeCloseTo(0);
     expect(dot(pinkan, password)).toBeCloseTo(0);
-    expect(dot(pinkan, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(pinkan, semifourth))).toBeCloseTo(248.868);
-    expect(mmod(natsToCents(dot(pinkan, g)), 1200)).toBeCloseTo(1200 - 248.868);
+    expect(dot(pinkan, octave)).toBeCloseTo(1200);
+    expect(dot(pinkan, semifourth)).toBeCloseTo(248.868);
+    expect(mmod(dot(pinkan, g), 1200)).toBeCloseTo(1200 - 248.868);
   });
 });
 
 describe('Free Temperament', () => {
+  it('supports equal temperaments', () => {
+    const jip = [Math.LN2, Math.log(5), Math.log(9 / 7)];
+    const marveltri = FreeTemperament.fromValList([13], jip);
+
+    const majorThird = marveltri.steps([-2, 1, 0]);
+    const supermajorThird = marveltri.steps([0, 0, 1]);
+
+    expect(majorThird).toBe(4);
+    expect(supermajorThird).toBe(5);
+
+    expect(marveltri.tune([-2, 1, 0], {units: 'ratio'})).toBeCloseTo(
+      2 ** (4 / 13)
+    );
+  });
+
   it('calculates meantone from vals', () => {
     const jip = LOG_PRIMES.slice(0, 3);
     const edo12 = [12, 19, 28];
     const edo19 = [19, 30, 44];
     const temperament = FreeTemperament.fromValList([edo12, edo19], jip);
-    const meantone = temperament.toPOTE();
+    const meantone = temperament.getMapping();
 
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
     const fifth = fractionToMonzoAndResidual(new Fraction(3, 2), 3)[0];
     const octave = [1, 0, 0];
 
     expect(dot(meantone, syntonicComma)).toBeCloseTo(0);
-    expect(dot(meantone, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
+    expect(dot(meantone, octave)).toBeCloseTo(1200);
+    expect(dot(meantone, fifth)).toBeCloseTo(696.239);
   });
 
   it('can handle a fractional JI subgroup such as 2.3.13/5 (barbados)', () => {
@@ -459,7 +477,7 @@ describe('Free Temperament', () => {
     const jip = [Math.LN2, LOG_PRIMES[1], LOG_PRIMES[5] - LOG_PRIMES[2]];
     const temperament = FreeTemperament.fromCommaList([islandComma], jip);
 
-    const barbados = temperament.toPOTE();
+    const barbados = temperament.getMapping({units: 'nats'});
 
     const [d, g] = temperament.divisionsGenerator();
 
@@ -476,6 +494,7 @@ describe('Free Temperament', () => {
     expect(dot(barbados, islandComma)).toBeCloseTo(0);
     expect(dot(barbados, octave)).toBeCloseTo(Math.LN2);
     expect(natsToCents(dot(barbados, semifourth))).toBeCloseTo(248.621);
+    expect(temperament.tune(semifourth)).toBeCloseTo(248.621);
     expect(mmod(natsToCents(dot(barbados, g)), 1200)).toBeCloseTo(
       1200 - 248.621
     );
@@ -497,7 +516,7 @@ describe('Free Temperament', () => {
       [islandComma, password],
       jip
     );
-    const pinkan = temperament.toPOTE();
+    const pinkan = temperament.getMapping();
 
     const [d, g] = temperament.divisionsGenerator();
 
@@ -508,8 +527,8 @@ describe('Free Temperament', () => {
     expect(d).toBe(1);
     expect(dot(pinkan, islandComma)).toBeCloseTo(0);
     expect(dot(pinkan, password)).toBeCloseTo(0);
-    expect(dot(pinkan, octave)).toBeCloseTo(Math.LN2);
-    expect(natsToCents(dot(pinkan, semifourth))).toBeCloseTo(248.868);
-    expect(mmod(natsToCents(dot(pinkan, g)), 1200)).toBeCloseTo(1200 - 248.868);
+    expect(dot(pinkan, octave)).toBeCloseTo(1200);
+    expect(dot(pinkan, semifourth)).toBeCloseTo(248.868);
+    expect(mmod(dot(pinkan, g), 1200)).toBeCloseTo(1200 - 248.868);
   });
 });
