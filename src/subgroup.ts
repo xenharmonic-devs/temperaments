@@ -178,7 +178,10 @@ export class Subgroup {
   static inferPrimeSubgroup(commas: (Monzo | FractionValue)[]) {
     const monzos: Monzo[] = [];
     commas.forEach(comma => {
-      if (Array.isArray(comma) && comma.length > 2) {
+      if (
+        Array.isArray(comma) &&
+        !(comma.length === 2 && typeof comma[0] === 'string')
+      ) {
         monzos.push(comma as Monzo);
         return;
       }

@@ -1,10 +1,11 @@
 import Fraction, {NumeratorDenominator} from 'fraction.js';
 
+// Explicitly drop [number, number] because it overlaps with monzos
 export type FractionValue =
   | Fraction
   | number
   | string
-  | [number | string, number | string]
+  | [string, string]
   | NumeratorDenominator;
 
 export function arraysEqual(a: any[], b: any[]) {

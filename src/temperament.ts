@@ -45,7 +45,10 @@ function resolveInterval(
   subgroup: Subgroup,
   strip = false
 ): Monzo {
-  if (Array.isArray(interval) && interval.length > 2) {
+  if (
+    Array.isArray(interval) &&
+    !(interval.length === 2 && typeof interval[0] === 'string')
+  ) {
     if (strip) {
       return subgroup.strip(interval as Monzo);
     } else {
