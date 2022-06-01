@@ -54,7 +54,7 @@ describe('Temperament', () => {
   it('reduces to the trivial temperament when given no vals', () => {
     const subgroup = new Subgroup(5);
     const temperament = Temperament.fromValList([], subgroup);
-    const trivial = temperament.getMapping({pureOctaves: false});
+    const trivial = temperament.getMapping({temperedEquaves: true});
     const octave = [1, 0, 0];
     const tritave = [0, 1, 0];
     const pentave = [0, 0, 1];
@@ -67,7 +67,7 @@ describe('Temperament', () => {
   it('reduces to just intonation when given no commas', () => {
     const temperament = Temperament.fromCommaList([], 5);
     const justIntonation = temperament.getMapping({
-      pureOctaves: false,
+      temperedEquaves: true,
       units: 'nats',
     });
     const octave = [1, 0, 0];
@@ -176,7 +176,7 @@ describe('Temperament', () => {
   it('calculates starling rank 3 from a comma', () => {
     const comma = fractionToMonzo(new Fraction(126, 125));
     const temperament = Temperament.fromCommaList([comma]);
-    const starling = temperament.getMapping({pureOctaves: false});
+    const starling = temperament.getMapping({temperedEquaves: true});
     const septimalQuarterTone = fractionToMonzo(new Fraction(36, 35));
     const jubilisma = fractionToMonzo(new Fraction(50, 49));
     const octave = [1, 0, 0, 0];
@@ -198,7 +198,7 @@ describe('Temperament', () => {
       [edo12, edo27, edo31],
       subgroup
     );
-    const starling = temperament.getMapping({pureOctaves: false});
+    const starling = temperament.getMapping({temperedEquaves: true});
     const comma = fractionToMonzo(new Fraction(126, 125));
     const octave = [1, 0, 0, 0];
 
