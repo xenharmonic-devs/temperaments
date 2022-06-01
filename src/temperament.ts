@@ -1,6 +1,6 @@
 import {dot, Monzo} from './monzo';
 import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
-import {binomial, gcd, iteratedEuclid, FractionValue} from './utils';
+import {binomial, gcd, iteratedEuclid, FractionValue, mmod} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
@@ -85,6 +85,31 @@ abstract class BaseTemperament {
     this.value = value;
   }
 
+  abstract getMapping(options?: TuningOptions): Mapping;
+
+  periodGenerator(options?: TuningOptions): [number, number] {
+    options = options || {};
+    const [divisions, generatorMonzo] = this.divisionsGenerator();
+
+    const mapping = this.getMapping({
+      pureOctaves: options.pureOctaves,
+      metric: options.metric,
+      primeMapping: false,
+      units: 'nats',
+    });
+
+    const period = mapping[0] / divisions;
+    let generator = dot(mapping, generatorMonzo);
+    generator = Math.min(mmod(generator, period), mmod(-generator, period));
+    if (options.units === 'nats') {
+      return [period, generator];
+    }
+    if (options.units === 'ratio') {
+      return [Math.exp(period), Math.exp(generator)];
+    }
+    return [natsToCents(period), natsToCents(generator)];
+  }
+
   isNil() {
     return this.value.isNil();
   }
@@ -153,14 +178,19 @@ export class FreeTemperament extends BaseTemperament {
 
   tune(interval: Monzo, options?: TuningOptions): number {
     options = options || {};
-    const units = options.units;
-    options.units = 'nats';
-    const result = dot(this.getMapping(options), interval);
-    options.units = units;
-    if (units === 'nats') {
+    const result = dot(
+      this.getMapping({
+        primeMapping: options.primeMapping,
+        pureOctaves: options.pureOctaves,
+        metric: options.metric,
+        units: 'nats',
+      }),
+      interval
+    );
+    if (options.units === 'nats') {
       return result;
     }
-    if (units === 'ratio') {
+    if (options.units === 'ratio') {
       return Math.exp(result);
     }
     return natsToCents(result);
@@ -293,16 +323,21 @@ export class Temperament extends BaseTemperament {
 
   tune(interval: Monzo, options?: TuningOptions): number {
     options = options || {};
-    const units = options.units;
     const primeMapping = !!options.primeMapping;
     const monzo = resolveInterval(interval, this.subgroup, primeMapping);
-    options.units = 'nats';
-    const result = dot(this.getMapping(options), monzo);
-    options.units = units;
-    if (units === 'nats') {
+    const result = dot(
+      this.getMapping({
+        primeMapping: options.primeMapping,
+        pureOctaves: options.pureOctaves,
+        metric: options.metric,
+        units: 'nats',
+      }),
+      monzo
+    );
+    if (options.units === 'nats') {
       return result;
     }
-    if (units === 'ratio') {
+    if (options.units === 'ratio') {
       return Math.exp(result);
     }
     return natsToCents(result);
