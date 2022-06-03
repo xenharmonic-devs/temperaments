@@ -157,12 +157,20 @@ abstract class BaseTemperament {
     return [divisions, generator];
   }
 
+  getRank(): number {
+    return this.value.grades()[0];
+  }
+
   rankPrefix(rank: number): number[] {
     return [
       ...this.value
         .vector(rank)
         .slice(0, binomial(this.dimensions - 1, rank - 1)),
     ];
+  }
+
+  getNames(): {given?: string; color?: string; wedgie: string} {
+    throw new Error('Unimplemented');
   }
 }
 
@@ -460,5 +468,13 @@ export class Temperament extends BaseTemperament {
       value[i] = Math.round(value[i]);
     }
     return new Temperament(Clifford, value, subgroup);
+  }
+
+  // Monkey patched in at names.ts
+  static fromName(
+    name: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+    subgroup?: SubgroupValue // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): Temperament | undefined {
+    throw new Error('Unimplemented');
   }
 }

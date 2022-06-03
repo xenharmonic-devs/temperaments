@@ -1,13 +1,10 @@
 import Fraction from 'fraction.js';
 import {describe, it, expect} from 'vitest';
 
-import {
-  fractionToMonzoAndResidual,
-  getCommaNames,
-  getRank2GivenName,
-  Temperament,
-} from '../index';
-import {fractionToMonzo} from '../monzo';
+import {getCommaNames, getRank2GivenName} from '../names';
+import {fractionToMonzo, fractionToMonzoAndResidual} from '../monzo';
+import {Temperament} from '../temperament';
+import {arraysEqual} from '../utils';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
@@ -79,5 +76,23 @@ describe('Comma namer', () => {
 
   it("doesn't know about about this comma I just made up", () => {
     expect(getCommaNames([1, 2, 3, 4, 5]).length).toBe(0);
+  });
+});
+
+describe('Temperament monkey patch', () => {
+  it('knows about the given name, color and wedgie of Magic', () => {
+    const temperament = Temperament.fromValList([19, 22], 5);
+    const names = temperament.getNames();
+    expect(names.given).toBe('Magic');
+    expect(names.color).toBe('Laquinyo');
+    expect(names.wedgie).toBe('<<5,1,-10]]');
+  });
+
+  it('can be constructed from a name', () => {
+    const temperament = Temperament.fromName('Injera');
+    temperament.canonize();
+    expect(
+      arraysEqual([...temperament.value.vector(2)], [2, 8, 8, 8, 7, -4])
+    ).toBeTruthy();
   });
 });
