@@ -92,21 +92,21 @@ export function extendedEuclid(a: number, b: number) {
   };
 }
 
-export function iteratedEuclid(params: NumberArray) {
-  if (!params.length) {
-    return [];
-  }
-  const coefs = [1];
-  let a = params[0];
-  let i = 1;
-  while (i < params.length) {
-    const ee = extendedEuclid(a, params[i]);
+export function iteratedEuclid(params: Iterable<number>) {
+  const coefs = [];
+  let a: number | undefined = undefined;
+  for (const param of params) {
+    if (a === undefined) {
+      a = param;
+      coefs.push(1);
+      continue;
+    }
+    const ee = extendedEuclid(a, param);
     for (let j = 0; j < coefs.length; ++j) {
       coefs[j] *= ee.coefA;
     }
     a = ee.gcd;
     coefs.push(ee.coefB);
-    i++;
   }
   return coefs;
 }
