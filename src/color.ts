@@ -314,7 +314,7 @@ export class ColorInterval {
   }
 }
 
-export function parseColorComma(token: string) {
+export function colorComma(token: string) {
   token = token.toLowerCase().replace('-', '');
   let shortToken = '';
   let exponent: null | string = null;
@@ -604,8 +604,8 @@ export function parseColorTemperament(name: string) {
     primeIndices.add(ALL_BY_LIMIT.indexOf(limit.toLowerCase().trim()));
   });
 
-  const lastMonzo = parseColorComma(comma);
-  const commaMonzos = commas.map(c => parseColorComma(c));
+  const lastMonzo = colorComma(comma);
+  const commaMonzos = commas.map(c => colorComma(c));
   commaMonzos.push(lastMonzo);
 
   commaMonzos.forEach(commaMonzo => {
