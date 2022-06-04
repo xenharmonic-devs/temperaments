@@ -65,18 +65,24 @@ function resolveInterval(
   }
 }
 
-const ALGEBRA_CACHE: Map<number, typeof AlgebraElement> = new Map();
-function getAlgebra(dimensions: number) {
-  if (ALGEBRA_CACHE.has(dimensions)) {
-    return ALGEBRA_CACHE.get(dimensions)!;
+const ALGEBRA_CACHES: Map<number, typeof AlgebraElement>[] = [
+  new Map(),
+  new Map(),
+];
+function getAlgebra(dimensions: number, real = false) {
+  const cache = real ? ALGEBRA_CACHES[0] : ALGEBRA_CACHES[1];
+  if (cache.has(dimensions)) {
+    return cache.get(dimensions)!;
   }
-  const algebra = Algebra(dimensions);
-  ALGEBRA_CACHE.set(dimensions, algebra);
+  const baseType = real ? Float64Array : Int32Array;
+  const algebra = Algebra(dimensions, 0, 0, baseType);
+  cache.set(dimensions, algebra);
   return algebra;
 }
 
 export function clearCache() {
-  ALGEBRA_CACHE.clear();
+  ALGEBRA_CACHES[0].clear();
+  ALGEBRA_CACHES[1].clear();
 }
 
 abstract class BaseTemperament {
@@ -229,9 +235,11 @@ export class FreeTemperament extends BaseTemperament {
 
     const metric = options.metric || this.jip.map(j => 1 / j);
 
-    const jip = this.algebra.fromVector(this.jip.map((j, i) => j * metric[i]));
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
 
-    const weightedValue = this.value.applyWeights(metric);
+    const jip = Clifford.fromVector(this.jip.map((j, i) => j * metric[i]));
+
+    const weightedValue = new Clifford(this.value).applyWeights(metric);
 
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     const mapping = [...projected.vector().map((p, i) => p / metric[i])];
@@ -295,7 +303,7 @@ export class FreeTemperament extends BaseTemperament {
 
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
     const dims = jip.length;
-    const Clifford = getAlgebra(dims);
+    const Clifford = getAlgebra(dims, true);
 
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
 
@@ -310,7 +318,9 @@ export class FreeTemperament extends BaseTemperament {
     for (let i = 0; i < value.length; ++i) {
       value[i] = Math.round(value[i]);
     }
-    return new FreeTemperament(Clifford, value, jip);
+    const IntClifford = getAlgebra(dims);
+    const intValue = new IntClifford(value);
+    return new FreeTemperament(IntClifford, intValue, jip);
   }
 }
 
@@ -367,9 +377,11 @@ export class Temperament extends BaseTemperament {
     const jip_ = this.subgroup.jip();
     const metric = options.metric || jip_.map(j => 1 / j);
 
-    const jip = this.algebra.fromVector(jip_.map((j, i) => j * metric[i]));
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
 
-    const weightedValue = this.value.applyWeights(metric);
+    const jip = Clifford.fromVector(jip_.map((j, i) => j * metric[i]));
+
+    const weightedValue = new Clifford(this.value).applyWeights(metric);
 
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     let mapping = [...projected.vector().map((p, i) => p / metric[i])];
@@ -448,7 +460,7 @@ export class Temperament extends BaseTemperament {
   ) {
     const subgroup_ = new Subgroup(subgroup);
     const dims = subgroup_.basis.length;
-    const Clifford = getAlgebra(dims);
+    const Clifford = getAlgebra(dims, true);
 
     const jip = subgroup_.jip();
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
@@ -464,7 +476,9 @@ export class Temperament extends BaseTemperament {
     for (let i = 0; i < value.length; ++i) {
       value[i] = Math.round(value[i]);
     }
-    return new Temperament(Clifford, value, subgroup_);
+    const IntClifford = getAlgebra(dims);
+    const intValue = new IntClifford(value);
+    return new Temperament(IntClifford, intValue, subgroup_);
   }
 
   // Monkey patched in at names.ts
