@@ -1,8 +1,9 @@
 import {LOG_PRIMES} from './constants';
-import {dot, Monzo} from './monzo';
+import {dot, fractionToMonzo, Monzo} from './monzo';
 import {Temperament} from './temperament';
 import {getSingleCommaColorName, parseColorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
+import {FractionValue} from './utils';
 
 let rawRank2Data: {[sg: string]: {[key: string]: string}} | undefined;
 
@@ -30,7 +31,17 @@ export function getRank2GivenName(
 
 let rawCommaData: {[key: string]: string[]} | undefined;
 
-export function getCommaNames(monzo: Monzo): string[] {
+export function getCommaNames(comma: FractionValue | Monzo): string[] {
+  let monzo: Monzo;
+  if (
+    Array.isArray(comma) &&
+    !(comma.length === 2 && typeof comma[0] === 'string')
+  ) {
+    monzo = comma as Monzo;
+  } else {
+    monzo = fractionToMonzo(comma as FractionValue);
+  }
+
   const size = dot(monzo, LOG_PRIMES);
   if (Math.abs(size) >= Math.LN2) {
     return [];
@@ -47,7 +58,7 @@ export function getCommaNames(monzo: Monzo): string[] {
 
 const subgroupsByName: {[key: string]: [string, number[]][]} = {};
 
-export function getPrefixByNameAndSubgroup(
+function getPrefixByNameAndSubgroup(
   name: string,
   subgroup?: SubgroupValue
 ): [string, number[]] | undefined {

@@ -185,7 +185,7 @@ export class Subgroup {
         monzos.push(comma as Monzo);
         return;
       }
-      monzos.push(fractionToMonzo(new Fraction(comma as FractionValue)));
+      monzos.push(fractionToMonzo(comma as FractionValue));
     });
     if (!monzos.length) {
       return new Subgroup([]);

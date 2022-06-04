@@ -43,20 +43,20 @@ function actuallyJip(jipOrNumberOfPrimes: number[] | number) {
   return jipOrNumberOfPrimes;
 }
 
-export function patentVal(divisions: number, jip_: MaybeJip) {
-  const jip = actuallyJip(jip_);
-  const divisionsPerLogEquave = divisions / jip[0];
-  return jip.map(logBasis => Math.round(logBasis * divisionsPerLogEquave));
+export function patentVal(divisions: number, jip: MaybeJip) {
+  const jip_ = actuallyJip(jip);
+  const divisionsPerLogEquave = divisions / jip_[0];
+  return jip_.map(logBasis => Math.round(logBasis * divisionsPerLogEquave));
 }
 
-export function fromWarts(token: number | string, jip_: MaybeJip) {
-  const jip = actuallyJip(jip_);
+export function fromWarts(token: number | string, jip: MaybeJip) {
+  const jip_ = actuallyJip(jip);
   const [divisions, modifications] = toDivisionsModifications(token);
-  const divisionsPerLogEquave = divisions / jip[0];
-  const result = patentVal(divisions, jip);
+  const divisionsPerLogEquave = divisions / jip_[0];
+  const result = patentVal(divisions, jip_);
   modifications.forEach(m => {
     const [index, modification] = m;
-    if (jip[index] * divisionsPerLogEquave > result[index]) {
+    if (jip_[index] * divisionsPerLogEquave > result[index]) {
       result[index] += modification;
     } else {
       result[index] -= modification;
@@ -65,16 +65,16 @@ export function fromWarts(token: number | string, jip_: MaybeJip) {
   return result;
 }
 
-export function toWarts(val: number[], jip_?: MaybeJip) {
-  const jip = actuallyJip(jip_ || val.length);
+export function toWarts(val: number[], jip?: MaybeJip) {
+  const jip_ = actuallyJip(jip || val.length);
   const divisions = val[0];
-  const divisionsPerLogEquave = divisions / jip[0];
-  const patent = patentVal(divisions, jip);
+  const divisionsPerLogEquave = divisions / jip_[0];
+  const patent = patentVal(divisions, jip_);
   let result = divisions.toString();
   for (let index = 0; index < val.length; ++index) {
     const modification = val[index] - patent[index];
     let count = 2 * Math.abs(modification);
-    if (jip[index] * divisionsPerLogEquave > patent[index]) {
+    if (jip_[index] * divisionsPerLogEquave > patent[index]) {
       if (modification > 0) {
         count--;
       }

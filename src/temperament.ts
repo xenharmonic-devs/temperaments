@@ -389,20 +389,17 @@ export class Temperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
-  static fromValList(
-    vals: (Val | number | string)[],
-    subgroup_: SubgroupValue
-  ) {
-    const subgroup = new Subgroup(subgroup_);
-    const Clifford = getAlgebra(subgroup.basis.length);
+  static fromValList(vals: (Val | number | string)[], subgroup: SubgroupValue) {
+    const subgroup_ = new Subgroup(subgroup);
+    const Clifford = getAlgebra(subgroup_.basis.length);
 
     if (!vals.length) {
-      return new Temperament(Clifford, Clifford.scalar(), subgroup);
+      return new Temperament(Clifford, Clifford.scalar(), subgroup_);
     }
     const promotedVals = vals.map(val_ => {
       let val: Val;
       if (typeof val_ === 'number' || typeof val_ === 'string') {
-        val = subgroup.fromWarts(val_);
+        val = subgroup_.fromWarts(val_);
       } else {
         val = val_;
       }
@@ -411,49 +408,49 @@ export class Temperament extends BaseTemperament {
     return new Temperament(
       Clifford,
       promotedVals.reduce((a, b) => wedge(a, b)),
-      subgroup
+      subgroup_
     );
   }
 
   static fromCommaList(
     commas: (Comma | FractionValue)[],
-    subgroup_?: SubgroupValue
+    subgroup?: SubgroupValue
   ) {
-    let subgroup: Subgroup;
-    if (subgroup_ === undefined) {
-      subgroup = Subgroup.inferPrimeSubgroup(commas);
+    let subgroup_: Subgroup;
+    if (subgroup === undefined) {
+      subgroup_ = Subgroup.inferPrimeSubgroup(commas);
     } else {
-      subgroup = new Subgroup(subgroup_);
+      subgroup_ = new Subgroup(subgroup);
     }
-    const Clifford = getAlgebra(subgroup.basis.length);
+    const Clifford = getAlgebra(subgroup_.basis.length);
 
     if (!commas.length) {
-      return new Temperament(Clifford, Clifford.pseudoscalar(), subgroup);
+      return new Temperament(Clifford, Clifford.pseudoscalar(), subgroup_);
     }
 
     const promotedCommas = commas.map(comma =>
       Clifford.fromVector(
-        resolveInterval(comma, subgroup, subgroup_ === undefined)
+        resolveInterval(comma, subgroup_, subgroup === undefined)
       ).dual()
     );
 
     return new Temperament(
       Clifford,
       promotedCommas.reduce((a, b) => vee(a, b)),
-      subgroup
+      subgroup_
     );
   }
 
   static fromPrefix(
     rank: number,
     wedgiePrefix: number[],
-    subgroup_: SubgroupValue
+    subgroup: SubgroupValue
   ) {
-    const subgroup = new Subgroup(subgroup_);
-    const dims = subgroup.basis.length;
+    const subgroup_ = new Subgroup(subgroup);
+    const dims = subgroup_.basis.length;
     const Clifford = getAlgebra(dims);
 
-    const jip = subgroup.jip();
+    const jip = subgroup_.jip();
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
 
     const paddedWedgie = Array(binomial(dims, rank - 1)).fill(0);
@@ -467,7 +464,7 @@ export class Temperament extends BaseTemperament {
     for (let i = 0; i < value.length; ++i) {
       value[i] = Math.round(value[i]);
     }
-    return new Temperament(Clifford, value, subgroup);
+    return new Temperament(Clifford, value, subgroup_);
   }
 
   // Monkey patched in at names.ts
