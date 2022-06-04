@@ -22,7 +22,7 @@ export type PitchUnits = 'ratio' | 'cents' | 'nats';
 
 export type TuningOptions = {
   units?: PitchUnits;
-  temperedEquaves?: boolean;
+  temperEquaves?: boolean;
   primeMapping?: boolean;
   metric?: Metric;
 };
@@ -95,7 +95,7 @@ abstract class BaseTemperament {
     const [divisions, generatorMonzo] = this.divisionsGenerator();
 
     const mapping = this.getMapping({
-      temperedEquaves: options.temperedEquaves,
+      temperEquaves: options.temperEquaves,
       metric: options.metric,
       primeMapping: false,
       units: 'nats',
@@ -192,7 +192,7 @@ export class FreeTemperament extends BaseTemperament {
     const result = dot(
       this.getMapping({
         primeMapping: options.primeMapping,
-        temperedEquaves: options.temperedEquaves,
+        temperEquaves: options.temperEquaves,
         metric: options.metric,
         units: 'nats',
       }),
@@ -236,7 +236,7 @@ export class FreeTemperament extends BaseTemperament {
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     const mapping = [...projected.vector().map((p, i) => p / metric[i])];
 
-    if (!options.temperedEquaves) {
+    if (!options.temperEquaves) {
       const purifier = this.jip[0] / mapping[0];
       for (let i = 0; i < mapping.length; ++i) {
         mapping[i] *= purifier;
@@ -339,7 +339,7 @@ export class Temperament extends BaseTemperament {
     const result = dot(
       this.getMapping({
         primeMapping: options.primeMapping,
-        temperedEquaves: options.temperedEquaves,
+        temperEquaves: options.temperEquaves,
         metric: options.metric,
         units: 'nats',
       }),
@@ -373,7 +373,7 @@ export class Temperament extends BaseTemperament {
 
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     let mapping = [...projected.vector().map((p, i) => p / metric[i])];
-    if (!options.temperedEquaves) {
+    if (!options.temperEquaves) {
       const purifier = Math.log(this.subgroup.basis[0].valueOf()) / mapping[0];
       mapping = mapping.map(component => component * purifier);
     }
