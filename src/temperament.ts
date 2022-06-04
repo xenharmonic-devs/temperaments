@@ -426,7 +426,8 @@ export class Temperament extends BaseTemperament {
 
   static fromCommas(
     commas: (Comma | FractionValue)[],
-    subgroup?: SubgroupValue
+    subgroup?: SubgroupValue,
+    stripCommas?: boolean
   ) {
     let subgroup_: Subgroup;
     if (subgroup === undefined) {
@@ -440,10 +441,12 @@ export class Temperament extends BaseTemperament {
       return new Temperament(Clifford, Clifford.pseudoscalar(), subgroup_);
     }
 
+    if (stripCommas === undefined) {
+      stripCommas = subgroup === undefined;
+    }
+
     const promotedCommas = commas.map(comma =>
-      Clifford.fromVector(
-        resolveInterval(comma, subgroup_, subgroup === undefined)
-      ).dual()
+      Clifford.fromVector(resolveInterval(comma, subgroup_, stripCommas)).dual()
     );
 
     return new Temperament(

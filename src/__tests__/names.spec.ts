@@ -81,8 +81,17 @@ describe('Comma namer', () => {
 
 describe('Comma retriever', () => {
   it('knows about ragisma', () => {
-    const comma = namedComma('ragisma');
+    const comma = namedComma('ragisma', true);
     expect(arraysEqual(comma, [-1, -7, 4, 1])).toBeTruthy();
+  });
+
+  it('can reproduce an example from README.md', () => {
+    const pinkan = Temperament.fromCommas(
+      [namedComma('island comma'), namedComma('password')],
+      '2.3.13/5.19/5'
+    );
+
+    expect(pinkan.tune('15/13')).toBeCloseTo(248.868);
   });
 });
 
@@ -101,6 +110,12 @@ describe('Temperament monkey patch', () => {
     expect(
       arraysEqual(temperament.value.vector(2), [2, 8, 8, 8, 7, -4])
     ).toBeTruthy();
+  });
+
+  it('can be constructed from a lower case name', () => {
+    const temperament = Temperament.fromName('passion');
+    temperament.canonize();
+    expect(arraysEqual(temperament.value.vector(2), [5, -4, -18])).toBeTruthy();
   });
 
   it('can be constructed from a color', () => {

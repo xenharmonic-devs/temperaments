@@ -127,6 +127,20 @@ export function fractionToMonzo(fraction: FractionValue) {
   return result;
 }
 
+export function monzoToFraction(monzo: Monzo) {
+  let numerator = 1;
+  let denominator = 1;
+  monzo.forEach((component, index) => {
+    if (component > 0) {
+      numerator *= PRIMES[index] ** component;
+    }
+    if (component < 0) {
+      denominator *= PRIMES[index] ** -component;
+    }
+  });
+  return new Fraction(numerator, denominator);
+}
+
 export function dot(a: NumberArray, b: NumberArray): number {
   let result = 0;
   for (let i = 0; i < Math.min(a.length, b.length); ++i) {

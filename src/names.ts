@@ -1,9 +1,10 @@
 import {LOG_PRIMES} from './constants';
-import {dot, fractionToMonzo, Monzo} from './monzo';
+import {dot, fractionToMonzo, Monzo, monzoToFraction} from './monzo';
 import {Temperament} from './temperament';
 import {getSingleCommaColorName, parseColorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {FractionValue} from './utils';
+import Fraction from 'fraction.js';
 
 let rawCommaData: {[key: string]: string[]} | undefined;
 
@@ -34,7 +35,9 @@ export function getCommaNames(comma: FractionValue | Monzo): string[] {
 
 const commaByName: Map<string, Monzo> = new Map();
 
-export function namedComma(name: string) {
+export function namedComma(name: string): Fraction;
+export function namedComma(name: string, asMonzo: boolean): Monzo;
+export function namedComma(name: string, asMonzo?: boolean): Fraction | Monzo {
   if (!commaByName.size) {
     if (rawCommaData === undefined) {
       rawCommaData = require('../resources/commas.json');
@@ -43,7 +46,7 @@ export function namedComma(name: string) {
       const comma = key.split(',').map(c => parseInt(c));
       comma.unshift(0);
       const offTwoSize = dot(comma, LOG_PRIMES);
-      comma[0] = -Math.round(offTwoSize);
+      comma[0] = -Math.round(offTwoSize / Math.LN2);
       rawCommaData![key].forEach(name => {
         commaByName.set(name.toLowerCase(), comma);
       });
@@ -51,9 +54,16 @@ export function namedComma(name: string) {
   }
   name = name.toLowerCase();
   if (!commaByName.has(name)) {
-    throw new Error('Unrecognized comma');
+    throw new Error(`Unrecognized comma ${name}`);
   }
-  return commaByName.get(name)!;
+  const result = commaByName.get(name)!;
+  if (asMonzo) {
+    return result;
+  }
+  if (asMonzo !== undefined) {
+    throw new Error('Incorrect call signature');
+  }
+  return monzoToFraction(result);
 }
 
 let rawRank2Data: {[sg: string]: {[key: string]: string}} | undefined;
@@ -103,6 +113,10 @@ function getPrefixByNameAndSubgroup(
     for (const value of subgroupsByName.values()) {
       value.sort((a, b) => (a[0] < b[0] ? -1 : 1));
     }
+  }
+  name = name.toLowerCase();
+  if (name.length) {
+    name = name[0].toUpperCase() + name.slice(1);
   }
   const values = subgroupsByName.get(name);
   if (values === undefined) {
