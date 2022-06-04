@@ -33,7 +33,7 @@ describe('Temperament namer', () => {
 
   it('knows about blackwood', () => {
     const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
-    const temperament = Temperament.fromCommaList([limma], 5);
+    const temperament = Temperament.fromCommas([limma], 5);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Blackwood');
   });
@@ -45,7 +45,7 @@ describe('Temperament namer', () => {
       [2, -3, 0, 0, 2],
       [0, 0, 1, 2, -2],
     ];
-    const temperament = Temperament.fromCommaList(commas, subgroup);
+    const temperament = Temperament.fromCommas(commas, subgroup);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Haumea');
   });
@@ -81,7 +81,7 @@ describe('Comma namer', () => {
 
 describe('Temperament monkey patch', () => {
   it('knows about the given name, color and wedgie of Magic', () => {
-    const temperament = Temperament.fromValList([19, 22], 5);
+    const temperament = Temperament.fromVals([19, 22], 5);
     const names = temperament.getNames();
     expect(names.given).toBe('Magic');
     expect(names.color).toBe('Laquinyo');

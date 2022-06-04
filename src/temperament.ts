@@ -251,7 +251,7 @@ export class FreeTemperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
-  static fromValList(vals: (Val | number | string)[], jip: Mapping) {
+  static fromVals(vals: (Val | number | string)[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
     if (!vals.length) {
@@ -275,7 +275,7 @@ export class FreeTemperament extends BaseTemperament {
     );
   }
 
-  static fromCommaList(commas: Comma[], jip: Mapping) {
+  static fromCommas(commas: Comma[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
     if (!commas.length) {
@@ -389,7 +389,7 @@ export class Temperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
-  static fromValList(vals: (Val | number | string)[], subgroup: SubgroupValue) {
+  static fromVals(vals: (Val | number | string)[], subgroup: SubgroupValue) {
     const subgroup_ = new Subgroup(subgroup);
     const Clifford = getAlgebra(subgroup_.basis.length);
 
@@ -412,7 +412,7 @@ export class Temperament extends BaseTemperament {
     );
   }
 
-  static fromCommaList(
+  static fromCommas(
     commas: (Comma | FractionValue)[],
     subgroup?: SubgroupValue
   ) {

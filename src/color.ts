@@ -617,5 +617,5 @@ export function parseColorTemperament(name: string) {
   });
   const primes = [...primeIndices].map(i => PRIMES[i]);
   primes.sort((a, b) => a - b);
-  return Temperament.fromCommaList(commaMonzos, primes);
+  return Temperament.fromCommas(commaMonzos, primes);
 }

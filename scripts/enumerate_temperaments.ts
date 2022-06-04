@@ -19,7 +19,7 @@ for (let a = minEdo; a <= maxEdo; ++a) {
   const valA = subgroup.patentVal(a);
   for (let b = a + 1; b <= maxEdo; ++b) {
     const valB = subgroup.patentVal(b);
-    const temperament = Temperament.fromValList([valA, valB], subgroup);
+    const temperament = Temperament.fromVals([valA, valB], subgroup);
     if (temperament.isNil()) {
       continue;
     }
@@ -117,7 +117,7 @@ console.log(
 console.log('Tempering out pairs of commas...');
 for (let i = 0; i < commas.length; ++i) {
   for (let j = i + 1; j < commas.length; ++j) {
-    const temperament = Temperament.fromCommaList(
+    const temperament = Temperament.fromCommas(
       [commas[i], commas[j]],
       subgroup
     );
