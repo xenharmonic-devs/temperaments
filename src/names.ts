@@ -5,30 +5,6 @@ import {getSingleCommaColorName, parseColorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {FractionValue} from './utils';
 
-let rawRank2Data: {[sg: string]: {[key: string]: string}} | undefined;
-
-// Assumes the argument has been canonized
-export function getRank2GivenName(
-  temperament: Temperament
-): string | undefined {
-  const prefix = temperament.rankPrefix(2);
-  const recovered = Temperament.fromPrefix(2, prefix, temperament.subgroup);
-  recovered.canonize();
-  if (!temperament.equals(recovered)) {
-    return undefined;
-  }
-  if (rawRank2Data === undefined) {
-    rawRank2Data = require('../resources/x31eqRank2.json');
-  }
-  const key = prefix.join(',');
-  const subgroupData =
-    rawRank2Data![temperament.subgroup.toString() as keyof typeof rawRank2Data];
-  if (subgroupData === undefined) {
-    return undefined;
-  }
-  return subgroupData[key as keyof typeof subgroupData];
-}
-
 let rawCommaData: {[key: string]: string[]} | undefined;
 
 export function getCommaNames(comma: FractionValue | Monzo): string[] {
@@ -56,13 +32,61 @@ export function getCommaNames(comma: FractionValue | Monzo): string[] {
   return rawCommaData![key as keyof typeof rawCommaData] || [];
 }
 
-const subgroupsByName: {[key: string]: [string, number[]][]} = {};
+const commaByName: Map<string, Monzo> = new Map();
+
+export function namedComma(name: string) {
+  if (!commaByName.size) {
+    if (rawCommaData === undefined) {
+      rawCommaData = require('../resources/commas.json');
+    }
+    Object.keys(rawCommaData!).forEach(key => {
+      const comma = key.split(',').map(c => parseInt(c));
+      comma.unshift(0);
+      const offTwoSize = dot(comma, LOG_PRIMES);
+      comma[0] = -Math.round(offTwoSize);
+      rawCommaData![key].forEach(name => {
+        commaByName.set(name.toLowerCase(), comma);
+      });
+    });
+  }
+  name = name.toLowerCase();
+  if (!commaByName.has(name)) {
+    throw new Error('Unrecognized comma');
+  }
+  return commaByName.get(name)!;
+}
+
+let rawRank2Data: {[sg: string]: {[key: string]: string}} | undefined;
+
+// Assumes the argument has been canonized
+export function getRank2GivenName(
+  temperament: Temperament
+): string | undefined {
+  const prefix = temperament.rankPrefix(2);
+  const recovered = Temperament.fromPrefix(2, prefix, temperament.subgroup);
+  recovered.canonize();
+  if (!temperament.equals(recovered)) {
+    return undefined;
+  }
+  if (rawRank2Data === undefined) {
+    rawRank2Data = require('../resources/x31eqRank2.json');
+  }
+  const key = prefix.join(',');
+  const subgroupData =
+    rawRank2Data![temperament.subgroup.toString() as keyof typeof rawRank2Data];
+  if (subgroupData === undefined) {
+    return undefined;
+  }
+  return subgroupData[key as keyof typeof subgroupData];
+}
+
+const subgroupsByName: Map<string, [string, number[]][]> = new Map();
 
 function getPrefixByNameAndSubgroup(
   name: string,
   subgroup?: SubgroupValue
 ): [string, number[]] | undefined {
-  if (!Object.keys(subgroupsByName).length) {
+  if (!subgroupsByName.size) {
     if (rawRank2Data === undefined) {
       rawRank2Data = require('../resources/x31eqRank2.json');
     }
@@ -70,19 +94,17 @@ function getPrefixByNameAndSubgroup(
       const subgroupData = rawRank2Data![sg];
       Object.keys(subgroupData).forEach(prefix => {
         const name_ = subgroupData[prefix];
-        subgroupsByName[name_] = subgroupsByName[name_] || [];
-        subgroupsByName[name_].push([
-          sg,
-          prefix.split(',').map(n => parseInt(n)),
-        ]);
+        const subgroupPrefixArray = subgroupsByName.get(name_) || [];
+        subgroupPrefixArray.push([sg, prefix.split(',').map(n => parseInt(n))]);
+        subgroupsByName.set(name_, subgroupPrefixArray);
       });
     });
 
-    Object.values(subgroupsByName).forEach(value => {
+    for (const value of subgroupsByName.values()) {
       value.sort((a, b) => (a[0] < b[0] ? -1 : 1));
-    });
+    }
   }
-  const values = subgroupsByName[name];
+  const values = subgroupsByName.get(name);
   if (values === undefined) {
     return undefined;
   }

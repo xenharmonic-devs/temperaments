@@ -1,7 +1,7 @@
 import Fraction from 'fraction.js';
 import {describe, it, expect} from 'vitest';
 
-import {getCommaNames, getRank2GivenName} from '../names';
+import {getCommaNames, getRank2GivenName, namedComma} from '../names';
 import {fractionToMonzo, fractionToMonzoAndResidual} from '../monzo';
 import {Temperament} from '../temperament';
 import {arraysEqual} from '../utils';
@@ -76,6 +76,13 @@ describe('Comma namer', () => {
 
   it("doesn't know about about this comma I just made up", () => {
     expect(getCommaNames([1, 2, 3, 4, 5]).length).toBe(0);
+  });
+});
+
+describe('Comma retriever', () => {
+  it('knows about ragisma', () => {
+    const comma = namedComma('ragisma');
+    expect(arraysEqual(comma, [-1, -7, 4, 1])).toBeTruthy();
   });
 });
 
