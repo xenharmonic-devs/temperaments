@@ -332,7 +332,7 @@ export class Temperament extends BaseTemperament {
     return this.value.star(this.algebra.fromVector(monzo)).s;
   }
 
-  tune(interval: Monzo, options?: TuningOptions): number {
+  tune(interval: FractionValue | Monzo, options?: TuningOptions): number {
     options = options || {};
     const primeMapping = !!options.primeMapping;
     const monzo = resolveInterval(interval, this.subgroup, primeMapping);
