@@ -474,7 +474,12 @@ export class Temperament extends BaseTemperament {
   static fromName(
     name: string, // eslint-disable-line @typescript-eslint/no-unused-vars
     subgroup?: SubgroupValue // eslint-disable-line @typescript-eslint/no-unused-vars
-  ): Temperament | undefined {
+  ): Temperament {
+    throw new Error('Unimplemented');
+  }
+  static fromColor(
+    color: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): Temperament {
     throw new Error('Unimplemented');
   }
 }

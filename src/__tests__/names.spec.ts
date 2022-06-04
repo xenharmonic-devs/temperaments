@@ -95,4 +95,22 @@ describe('Temperament monkey patch', () => {
       arraysEqual([...temperament.value.vector(2)], [2, 8, 8, 8, 7, -4])
     ).toBeTruthy();
   });
+
+  it('can be constructed from a color', () => {
+    const temperament = Temperament.fromColor('Sazoquingubi Nowa + La');
+    expect(temperament.subgroup.toString()).toBe('2.5.7.11');
+    temperament.canonize();
+    expect(
+      arraysEqual([...temperament.value.vector(3)], [1, 5, 0, -9])
+    ).toBeTruthy();
+  });
+
+  it('can be constructed from two colors', () => {
+    const temperament = Temperament.fromColor('Sagugu & Zotrigu');
+    expect(temperament.subgroup.toString()).toBe('2.3.5.7');
+    temperament.canonize();
+    expect(
+      arraysEqual([...temperament.value.vector(2)], [2, -4, -16, -11, -31, -26])
+    ).toBeTruthy();
+  });
 });

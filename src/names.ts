@@ -1,7 +1,7 @@
 import {LOG_PRIMES} from './constants';
 import {dot, Monzo} from './monzo';
 import {Temperament} from './temperament';
-import {getSingleCommaColorName} from './color';
+import {getSingleCommaColorName, parseColorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
 
 let rawRank2Data: {[sg: string]: {[key: string]: string}} | undefined;
@@ -108,10 +108,14 @@ Temperament.prototype.getNames = function () {
 Temperament.fromName = function (
   name: string,
   subgroup?: SubgroupValue
-): Temperament | undefined {
+): Temperament {
   const sp = getPrefixByNameAndSubgroup(name, subgroup);
   if (sp === undefined) {
-    return undefined;
+    throw new Error(`Named temperament '${name}' not found`);
   }
   return Temperament.fromPrefix(2, sp[1], sp[0]);
+};
+
+Temperament.fromColor = function (color: string) {
+  return parseColorTemperament(color);
 };

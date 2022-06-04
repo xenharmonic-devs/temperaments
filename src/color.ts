@@ -572,3 +572,50 @@ export function getSingleCommaColorName(temperament: Temperament) {
 
   return name;
 }
+
+export function parseColorTemperament(name: string) {
+  const commas = name.split('&').map(c => c.trim());
+  if (!commas.length) {
+    throw new Error('Failed to extract color commas');
+  }
+  const [commaNowaca_, ...limits] = commas
+    .pop()!
+    .split('+')
+    .map(c => c.trim());
+  const commaNowaca = commaNowaca_.split(' ');
+  const comma = commaNowaca.shift();
+  if (comma === undefined) {
+    throw new Error('Failed to extract color comma');
+  }
+  const primeIndices = new Set<number>([0, 1]);
+  if (commaNowaca.length) {
+    const nowaca = commaNowaca.shift()!.toLowerCase();
+    if (!nowaca.startsWith('no')) {
+      throw new Error("Second word must start with 'no'");
+    }
+    if (nowaca.includes('ca')) {
+      primeIndices.delete(0);
+    }
+    if (nowaca.includes('wa')) {
+      primeIndices.delete(1);
+    }
+  }
+  limits.forEach(limit => {
+    primeIndices.add(ALL_BY_LIMIT.indexOf(limit.toLowerCase().trim()));
+  });
+
+  const lastMonzo = parseColorComma(comma);
+  const commaMonzos = commas.map(c => parseColorComma(c));
+  commaMonzos.push(lastMonzo);
+
+  commaMonzos.forEach(commaMonzo => {
+    commaMonzo.forEach((component, index) => {
+      if (component) {
+        primeIndices.add(index);
+      }
+    });
+  });
+  const primes = [...primeIndices].map(i => PRIMES[i]);
+  primes.sort((a, b) => a - b);
+  return Temperament.fromCommaList(commaMonzos, primes);
+}
