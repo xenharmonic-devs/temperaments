@@ -92,7 +92,7 @@ describe('Temperament monkey patch', () => {
     const temperament = Temperament.fromName('Injera');
     temperament.canonize();
     expect(
-      arraysEqual([...temperament.value.vector(2)], [2, 8, 8, 8, 7, -4])
+      arraysEqual(temperament.value.vector(2), [2, 8, 8, 8, 7, -4])
     ).toBeTruthy();
   });
 
@@ -101,7 +101,7 @@ describe('Temperament monkey patch', () => {
     expect(temperament.subgroup.toString()).toBe('2.5.7.11');
     temperament.canonize();
     expect(
-      arraysEqual([...temperament.value.vector(3)], [1, 5, 0, -9])
+      arraysEqual(temperament.value.vector(3), [1, 5, 0, -9])
     ).toBeTruthy();
   });
 
@@ -110,7 +110,7 @@ describe('Temperament monkey patch', () => {
     expect(temperament.subgroup.toString()).toBe('2.3.5.7');
     temperament.canonize();
     expect(
-      arraysEqual([...temperament.value.vector(2)], [2, -4, -16, -11, -31, -26])
+      arraysEqual(temperament.value.vector(2), [2, -4, -16, -11, -31, -26])
     ).toBeTruthy();
   });
 });

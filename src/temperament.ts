@@ -150,8 +150,8 @@ abstract class BaseTemperament {
   // Assumes this is canonized rank-2
   divisionsGenerator(): [number, Monzo] {
     const equaveUnit = this.algebra.basisBlade(0);
-    const equaveProj = [...equaveUnit.dot(this.value).vector()];
-    const generator = iteratedEuclid([...equaveProj]);
+    const equaveProj = equaveUnit.dot(this.value).vector();
+    const generator = iteratedEuclid(equaveProj);
     const divisions = Math.abs(dot(generator, equaveProj));
 
     return [divisions, generator];

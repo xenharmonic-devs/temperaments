@@ -8,7 +8,17 @@ export type FractionValue =
   | [string, string]
   | NumeratorDenominator;
 
-export function arraysEqual(a: any[], b: any[]) {
+export interface AnyArray {
+  [key: number]: any;
+  length: number;
+}
+
+export interface NumberArray {
+  [key: number]: number;
+  length: number;
+}
+
+export function arraysEqual(a: AnyArray, b: AnyArray) {
   if (a === b) {
     return true;
   }
@@ -82,7 +92,7 @@ export function extendedEuclid(a: number, b: number) {
   };
 }
 
-export function iteratedEuclid(params: number[]) {
+export function iteratedEuclid(params: NumberArray) {
   if (!params.length) {
     return [];
   }

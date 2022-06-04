@@ -1,6 +1,6 @@
 import {PRIMES} from './constants';
 import Fraction from 'fraction.js';
-import {FractionValue} from './utils';
+import {FractionValue, NumberArray} from './utils';
 
 // No interpretation in Geometric Algebra
 export type Monzo = number[];
@@ -127,7 +127,7 @@ export function fractionToMonzo(fraction: FractionValue) {
   return result;
 }
 
-export function dot(a: Monzo, b: Monzo): number {
+export function dot(a: NumberArray, b: NumberArray): number {
   let result = 0;
   for (let i = 0; i < Math.min(a.length, b.length); ++i) {
     result += a[i] * b[i];
