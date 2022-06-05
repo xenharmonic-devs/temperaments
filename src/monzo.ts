@@ -5,6 +5,8 @@ import {FractionValue, NumberArray} from './utils';
 // No interpretation in Geometric Algebra
 export type Monzo = number[];
 
+export type MonzoValue = Monzo | FractionValue;
+
 export function monzosEqual(a: Monzo, b: Monzo) {
   if (a === b) {
     return true;
@@ -125,6 +127,17 @@ export function fractionToMonzo(fraction: FractionValue) {
     throw new Error('Out of primes');
   }
   return result;
+}
+
+export function resolveMonzo(value: MonzoValue): Monzo {
+  if (
+    Array.isArray(value) &&
+    !(value.length === 2 && typeof value[0] === 'string')
+  ) {
+    return value as Monzo;
+  } else {
+    return fractionToMonzo(value as FractionValue);
+  }
 }
 
 export function monzoToFraction(monzo: Monzo) {

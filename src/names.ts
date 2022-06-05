@@ -1,23 +1,14 @@
 import {LOG_PRIMES} from './constants';
-import {dot, fractionToMonzo, Monzo, monzoToFraction} from './monzo';
+import {dot, Monzo, monzoToFraction, MonzoValue, resolveMonzo} from './monzo';
 import {Temperament} from './temperament';
 import {getSingleCommaColorName, parseColorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
-import {FractionValue} from './utils';
 import Fraction from 'fraction.js';
 
 let rawCommaData: {[key: string]: string[]} | undefined;
 
-export function getCommaNames(comma: FractionValue | Monzo): string[] {
-  let monzo: Monzo;
-  if (
-    Array.isArray(comma) &&
-    !(comma.length === 2 && typeof comma[0] === 'string')
-  ) {
-    monzo = comma as Monzo;
-  } else {
-    monzo = fractionToMonzo(comma as FractionValue);
-  }
+export function getCommaNames(comma: MonzoValue): string[] {
+  let monzo = resolveMonzo(comma);
 
   const size = dot(monzo, LOG_PRIMES);
   if (Math.abs(size) >= Math.LN2) {

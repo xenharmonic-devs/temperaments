@@ -1,6 +1,6 @@
 import Fraction from 'fraction.js';
 import {LOG_PRIMES, PRIMES} from './constants';
-import {fractionToMonzo, type Monzo} from './monzo';
+import {fractionToMonzo, MonzoValue, type Monzo} from './monzo';
 import {FractionValue} from './utils';
 import {fromWarts, patentVal, toWarts} from './warts';
 
@@ -175,7 +175,7 @@ export class Subgroup {
     */
   }
 
-  static inferPrimeSubgroup(commas: (Monzo | FractionValue)[]) {
+  static inferPrimeSubgroup(commas: MonzoValue[]) {
     const monzos: Monzo[] = [];
     commas.forEach(comma => {
       if (
@@ -206,5 +206,26 @@ export class Subgroup {
   // This should be used to strip monzos after infering prime subgroup
   strip(comma: Monzo) {
     return this.basis.map(b => comma[PRIMES.indexOf(b.n)]);
+  }
+
+  resolveMonzo(interval: MonzoValue, strip = false): Monzo {
+    if (
+      Array.isArray(interval) &&
+      !(interval.length === 2 && typeof interval[0] === 'string')
+    ) {
+      if (strip) {
+        return this.strip(interval as Monzo);
+      } else {
+        return interval as Monzo;
+      }
+    } else {
+      const [monzo, residual] = this.toMonzoAndResidual(
+        interval as FractionValue
+      );
+      if (!residual.equals(1)) {
+        throw new Error('Interval outside subgroup');
+      }
+      return monzo;
+    }
   }
 }

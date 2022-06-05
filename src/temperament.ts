@@ -1,4 +1,4 @@
-import {dot, Monzo} from './monzo';
+import {dot, Monzo, MonzoValue} from './monzo';
 import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
 import {binomial, gcd, iteratedEuclid, FractionValue, mmod} from './utils';
 import Fraction from 'fraction.js';
@@ -38,31 +38,6 @@ export function natsToCents(nats: number) {
 
 export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
-}
-
-function resolveInterval(
-  interval: FractionValue | Monzo,
-  subgroup: Subgroup,
-  strip = false
-): Monzo {
-  if (
-    Array.isArray(interval) &&
-    !(interval.length === 2 && typeof interval[0] === 'string')
-  ) {
-    if (strip) {
-      return subgroup.strip(interval as Monzo);
-    } else {
-      return interval as Monzo;
-    }
-  } else {
-    const [monzo, residual] = subgroup.toMonzoAndResidual(
-      interval as FractionValue
-    );
-    if (!residual.equals(1)) {
-      throw new Error('Interval outside subgroup');
-    }
-    return monzo;
-  }
 }
 
 const ALGEBRA_CACHES: Map<number, typeof AlgebraElement>[] = [
@@ -337,15 +312,15 @@ export class Temperament extends BaseTemperament {
     this.subgroup = new Subgroup(subgroup);
   }
 
-  steps(interval: FractionValue | Monzo, primeMapping = false): number {
-    const monzo = resolveInterval(interval, this.subgroup, primeMapping);
+  steps(interval: MonzoValue, primeMapping = false): number {
+    const monzo = this.subgroup.resolveMonzo(interval, primeMapping);
     return this.value.star(this.algebra.fromVector(monzo)).s;
   }
 
-  tune(interval: FractionValue | Monzo, options?: TuningOptions): number {
+  tune(interval: MonzoValue, options?: TuningOptions): number {
     options = options || {};
     const primeMapping = !!options.primeMapping;
-    const monzo = resolveInterval(interval, this.subgroup, primeMapping);
+    const monzo = this.subgroup.resolveMonzo(interval, primeMapping);
     const result = dot(
       this.getMapping({
         primeMapping: options.primeMapping,
@@ -446,7 +421,7 @@ export class Temperament extends BaseTemperament {
     }
 
     const promotedCommas = commas.map(comma =>
-      Clifford.fromVector(resolveInterval(comma, subgroup_, stripCommas)).dual()
+      Clifford.fromVector(subgroup_.resolveMonzo(comma, stripCommas)).dual()
     );
 
     return new Temperament(
