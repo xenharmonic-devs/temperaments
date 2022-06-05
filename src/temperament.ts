@@ -72,23 +72,20 @@ abstract class BaseTemperament {
   abstract getMapping(options?: TuningOptions): Mapping;
 
   periodGenerator(options?: TuningOptions): [number, number] {
-    options = options || {};
-    const [divisions, generatorMonzo] = this.divisionsGenerator();
+    const mappingOptions = Object.assign({}, options || {});
+    mappingOptions.units = 'nats';
+    mappingOptions.primeMapping = false;
+    const mapping = this.getMapping(mappingOptions);
 
-    const mapping = this.getMapping({
-      temperEquaves: options.temperEquaves,
-      metric: options.metric,
-      primeMapping: false,
-      units: 'nats',
-    });
+    const [divisions, generatorMonzo] = this.divisionsGenerator();
 
     const period = mapping[0] / divisions;
     let generator = dot(mapping, generatorMonzo);
     generator = Math.min(mmod(generator, period), mmod(-generator, period));
-    if (options.units === 'nats') {
+    if (options?.units === 'nats') {
       return [period, generator];
     }
-    if (options.units === 'ratio') {
+    if (options?.units === 'ratio') {
       return [Math.exp(period), Math.exp(generator)];
     }
     return [natsToCents(period), natsToCents(generator)];
@@ -169,20 +166,14 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   tune(interval: Monzo, options?: TuningOptions): number {
-    options = options || {};
-    const result = dot(
-      this.getMapping({
-        primeMapping: options.primeMapping,
-        temperEquaves: options.temperEquaves,
-        metric: options.metric,
-        units: 'nats',
-      }),
-      interval
-    );
-    if (options.units === 'nats') {
+    const mappingOptions = Object.assign({}, options || {});
+    mappingOptions.units = 'nats';
+    mappingOptions.primeMapping = false;
+    const result = dot(this.getMapping(mappingOptions), interval);
+    if (options?.units === 'nats') {
       return result;
     }
-    if (options.units === 'ratio') {
+    if (options?.units === 'ratio') {
       return Math.exp(result);
     }
     return natsToCents(result);
@@ -321,15 +312,9 @@ export class Temperament extends BaseTemperament {
     options = options || {};
     const primeMapping = !!options.primeMapping;
     const monzo = this.subgroup.resolveMonzo(interval, primeMapping);
-    const result = dot(
-      this.getMapping({
-        primeMapping: options.primeMapping,
-        temperEquaves: options.temperEquaves,
-        metric: options.metric,
-        units: 'nats',
-      }),
-      monzo
-    );
+    const mappingOptions = Object.assign({}, options || {});
+    mappingOptions.units = 'nats';
+    const result = dot(this.getMapping(mappingOptions), monzo);
     if (options.units === 'nats') {
       return result;
     }
