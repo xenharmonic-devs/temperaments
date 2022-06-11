@@ -415,6 +415,11 @@ describe('Temperament', () => {
     expect(dot(pinkan, octave)).toBeCloseTo(1200);
     expect(dot(pinkan, semifourth)).toBeCloseTo(248.868);
     expect(mmod(dot(pinkan, g), 1200)).toBeCloseTo(1200 - 248.868);
+
+    const primePinkan = temperament.getMapping({primeMapping: true});
+
+    const fullSemifourth = fractionToMonzoAndResidual('15/13', 8)[0];
+    expect(mmod(dot(primePinkan, fullSemifourth), 1200)).toBeCloseTo(248.868);
   });
 
   it('can val-join temperaments', () => {

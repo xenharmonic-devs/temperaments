@@ -1,6 +1,7 @@
 import Fraction from 'fraction.js';
+import {vLinSolve} from 'ts-geometric-algebra';
 import {LOG_PRIMES, PRIMES} from './constants';
-import {fractionToMonzo, MonzoValue, type Monzo} from './monzo';
+import {dot, fractionToMonzo, MonzoValue, type Monzo} from './monzo';
 import {FractionValue} from './utils';
 import {fromWarts, patentVal, toWarts} from './warts';
 
@@ -114,39 +115,6 @@ export class Subgroup {
       return result;
     }
 
-    // Same assumptions as in monzo conversion
-    // The result has "holes", but should work if the subgroup isn't too crazy
-    const result = Array(limit).fill(0);
-    for (let i = 0; i < basisMonzos.length; ++i) {
-      let slotted = false;
-      for (let j = 0; j < basisMonzos[i].length; ++j) {
-        let slottable = true;
-        if (basisMonzos[i][j]) {
-          for (let k = 0; k < basisMonzos.length; ++k) {
-            if (k === i) {
-              continue;
-            }
-            if (basisMonzos[k][j]) {
-              slottable = false;
-              break;
-            }
-          }
-          if (slottable) {
-            result[j] = mapping[i] / basisMonzos[i][j];
-            slotted = true;
-            break;
-          }
-        }
-      }
-      if (!slotted) {
-        throw new Error('Failed to produce a valid prime mapping');
-      }
-    }
-    return result;
-
-    /*
-    *** Generic Algorithm but needs mathjs ***
-
     // Calculate the full matrix and solve BasisMatrix * result = mapping
     const missing = new Set<number>();
     for (let i = 0; i < limit; ++i) {
@@ -169,10 +137,17 @@ export class Subgroup {
     }
     const mapping_ = [...mapping];
     while (mapping_.length < limit) {
-      mapping.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
+      mapping_.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
     }
-    return flatten(lusolve(basisMonzos, mapping_));
-    */
+    const transposed = [];
+    for (let i = 0; i < limit; ++i) {
+      const row = [];
+      for (let j = 0; j < limit; ++j) {
+        row.push(basisMonzos[j][i]);
+      }
+      transposed.push(row);
+    }
+    return vLinSolve(mapping_, transposed);
   }
 
   static inferPrimeSubgroup(commas: MonzoValue[]) {
