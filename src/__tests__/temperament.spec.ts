@@ -4,7 +4,7 @@ import Fraction from 'fraction.js';
 import {dot, fractionToMonzoAndResidual, fractionToMonzo} from '../monzo';
 import {Temperament, natsToCents, FreeTemperament} from '../temperament';
 import {LOG_PRIMES} from '../constants';
-import {mmod} from '../utils';
+import {arraysEqual, mmod} from '../utils';
 import {Subgroup} from '../subgroup';
 
 describe('Temperament', () => {
@@ -447,6 +447,17 @@ describe('Temperament', () => {
     nineteen.canonize();
     expected.canonize();
     expect(nineteen.equals(expected)).toBeTruthy();
+  });
+
+  it('can calculate JI mapping', () => {
+    const augmented = Temperament.fromVals([3, 12], 5);
+    const period = [1 / 3, 0, 0]; // [-2, 0, 1] works too
+    const tritave = [0, 1, 0];
+    const mapping = augmented.jiMapping([period, tritave]);
+
+    expect(mapping.length).toBe(2);
+    expect(arraysEqual(mapping[0], [3, 0, 7])).toBeTruthy();
+    expect(arraysEqual(mapping[1], [0, 1, 0])).toBeTruthy();
   });
 });
 

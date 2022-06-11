@@ -1,5 +1,10 @@
 import {dot, Monzo, MonzoValue} from './monzo';
-import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
+import Algebra, {
+  AlgebraElement,
+  vee,
+  vLinSolve,
+  wedge,
+} from 'ts-geometric-algebra';
 import {binomial, gcd, iteratedEuclid, FractionValue, mmod} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue} from './subgroup';
@@ -194,6 +199,43 @@ abstract class BaseTemperament {
       blade.map(c => Math.round(c * normalizer)),
       grade
     );
+  }
+
+  jiMapping(generators: number[][], tolerance = 1e-5) {
+    if (generators.length !== this.getRank()) {
+      throw new Error('Number of basis generators must match rank');
+    }
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
+
+    // Not real commas with integer components, but we're not using them in the final result anyway
+    const commas = new Clifford(this.value.dual())
+      .bladeFactorize()[0]
+      .map(b => [...b.vector()]);
+    const basis = generators.concat(commas);
+
+    const primes = [];
+    for (let i = 0; i < this.algebra.dimensions; ++i) {
+      const prime = Array(this.algebra.dimensions).fill(0);
+      prime[i] = 1;
+      primes.push(prime);
+    }
+    // Calculate how each prime maps
+    const result_ = [];
+    for (let i = 0; i < primes.length; ++i) {
+      result_.push(
+        vLinSolve(primes[i], basis, tolerance).slice(0, generators.length)
+      );
+    }
+    // Transpose to get the mapping vectors
+    const result = [];
+    for (let i = 0; i < generators.length; ++i) {
+      const row = [];
+      for (let j = 0; j < result_.length; ++j) {
+        row.push(Math.round(result_[j][i]));
+      }
+      result.push(row);
+    }
+    return result;
   }
 }
 
