@@ -1,8 +1,7 @@
 import Fraction from 'fraction.js';
-import {vLinSolve} from 'ts-geometric-algebra';
 import {LOG_PRIMES, PRIMES} from './constants';
 import {dot, fractionToMonzo, MonzoValue, type Monzo} from './monzo';
-import {FractionValue} from './utils';
+import {cachedLinSolve, FractionValue} from './utils';
 import {fromWarts, patentVal, toWarts} from './warts';
 
 export type Basis = Fraction[];
@@ -147,7 +146,7 @@ export class Subgroup {
       }
       transposed.push(row);
     }
-    return vLinSolve(mapping_, transposed);
+    return cachedLinSolve(mapping_, transposed);
   }
 
   static inferPrimeSubgroup(commas: MonzoValue[]) {

@@ -1,4 +1,5 @@
 import Fraction, {NumeratorDenominator} from 'fraction.js';
+import Algebra, {AlgebraElement, linSolve} from 'ts-geometric-algebra';
 
 // Explicitly drop [number, number] because it overlaps with monzos
 export type FractionValue =
@@ -138,4 +139,27 @@ export function binomial(n: number, k: number) {
     BINOMIALS.push(nextRow);
   }
   return BINOMIALS[n][k];
+}
+
+const LINSOLVE_CACHE: Map<number, typeof AlgebraElement> = new Map();
+
+export function cachedLinSolve(
+  x: number[],
+  basis: number[][],
+  threshold = 1e-5
+) {
+  let algebra = LINSOLVE_CACHE.get(x.length);
+  if (algebra === undefined) {
+    algebra = Algebra(0, 0, x.length, Float64Array);
+    LINSOLVE_CACHE.set(x.length, algebra);
+  }
+  return linSolve(
+    algebra.fromVector(x),
+    basis.map(b => algebra!.fromVector(b)),
+    threshold
+  );
+}
+
+export function clearLinSolveCache() {
+  LINSOLVE_CACHE.clear();
 }

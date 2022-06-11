@@ -1,11 +1,13 @@
 import {dot, Monzo, MonzoValue} from './monzo';
-import Algebra, {
-  AlgebraElement,
-  vee,
-  vLinSolve,
-  wedge,
-} from 'ts-geometric-algebra';
-import {binomial, gcd, iteratedEuclid, FractionValue, mmod} from './utils';
+import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
+import {
+  binomial,
+  gcd,
+  iteratedEuclid,
+  FractionValue,
+  mmod,
+  cachedLinSolve,
+} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
@@ -223,7 +225,7 @@ abstract class BaseTemperament {
     const result_ = [];
     for (let i = 0; i < primes.length; ++i) {
       result_.push(
-        vLinSolve(primes[i], basis, tolerance).slice(0, generators.length)
+        cachedLinSolve(primes[i], basis, tolerance).slice(0, generators.length)
       );
     }
     // Transpose to get the mapping vectors
