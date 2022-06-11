@@ -71,6 +71,11 @@ abstract class BaseTemperament {
 
   abstract getMapping(options?: TuningOptions): Mapping;
 
+  abstract valJoin(other: BaseTemperament): BaseTemperament;
+  abstract valMeet(other: BaseTemperament): BaseTemperament;
+  abstract kernelJoin(other: BaseTemperament): BaseTemperament;
+  abstract kernelMeet(other: BaseTemperament): BaseTemperament;
+
   periodGenerator(options?: TuningOptions): [number, number] {
     const mappingOptions = Object.assign({}, options || {});
     mappingOptions.units = 'nats';
@@ -150,6 +155,46 @@ abstract class BaseTemperament {
   getNames(): {given?: string; color?: string; wedgie: string} {
     throw new Error('Unimplemented');
   }
+
+  rescaleValue(value: AlgebraElement, persistence = 100, threshold = 1e-4) {
+    const grade = value.grades()[0];
+    const blade = value.vector(grade);
+
+    let minValue = Infinity;
+    for (let i = 0; i < blade.length; ++i) {
+      const component = Math.abs(blade[i]);
+      if (component > threshold && component < Math.abs(minValue)) {
+        minValue = blade[i];
+      }
+    }
+
+    let normalizer = 1 / minValue;
+
+    let good = false;
+    for (let j = 1; j < persistence; ++j) {
+      const n = normalizer * j;
+      good = true;
+      for (let i = 0; i < blade.length; ++i) {
+        const component = blade[i] * n;
+        if (Math.abs(component - Math.round(component)) > threshold) {
+          good = false;
+          break;
+        }
+      }
+      if (good) {
+        normalizer = n;
+        break;
+      }
+    }
+    if (!good) {
+      throw new Error('Failed to rescale. Try increasing persistence.');
+    }
+
+    return this.algebra.fromVector(
+      blade.map(c => Math.round(c * normalizer)),
+      grade
+    );
+  }
 }
 
 // Temperament with an arbitrary basis represented in Geometric Algebra
@@ -162,7 +207,7 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   steps(interval: Monzo): number {
-    return this.value.star(this.algebra.fromVector(interval)).s;
+    return this.value.star(this.algebra.fromVector(interval));
   }
 
   tune(interval: Monzo, options?: TuningOptions): number {
@@ -225,6 +270,32 @@ export class FreeTemperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
+  valJoin(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    let join = new Clifford(this.value).meetJoin(
+      new Clifford(other.value),
+      threshold
+    )[1];
+    join = this.rescaleValue(join, persistence, threshold);
+    return new FreeTemperament(this.algebra, join, this.jip);
+  }
+  kernelMeet(other: FreeTemperament) {
+    return this.valJoin(other);
+  }
+
+  valMeet(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    let meet = new Clifford(this.value).meetJoin(
+      new Clifford(other.value),
+      threshold
+    )[0];
+    meet = this.rescaleValue(meet, persistence, threshold);
+    return new FreeTemperament(this.algebra, meet, this.jip);
+  }
+  kernelJoin(other: FreeTemperament) {
+    return this.valMeet(other);
+  }
+
   static fromVals(vals: (Val | number | string)[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
@@ -242,11 +313,7 @@ export class FreeTemperament extends BaseTemperament {
       return Clifford.fromVector(val);
     });
 
-    return new FreeTemperament(
-      Clifford,
-      promotedVals.reduce((a, b) => wedge(a, b)),
-      jip
-    );
+    return new FreeTemperament(Clifford, wedge(...promotedVals), jip);
   }
 
   static fromCommas(commas: Comma[], jip: Mapping) {
@@ -260,11 +327,7 @@ export class FreeTemperament extends BaseTemperament {
       Clifford.fromVector(comma).dual()
     );
 
-    return new FreeTemperament(
-      Clifford,
-      promotedCommas.reduce((a, b) => vee(a, b)),
-      jip
-    );
+    return new FreeTemperament(Clifford, vee(...promotedCommas), jip);
   }
 
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
@@ -305,7 +368,7 @@ export class Temperament extends BaseTemperament {
 
   steps(interval: MonzoValue, primeMapping = false): number {
     const monzo = this.subgroup.resolveMonzo(interval, primeMapping);
-    return this.value.star(this.algebra.fromVector(monzo)).s;
+    return this.value.star(this.algebra.fromVector(monzo));
   }
 
   tune(interval: MonzoValue, options?: TuningOptions): number {
@@ -361,6 +424,32 @@ export class Temperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
+  valJoin(other: Temperament, persistence = 100, threshold = 1e-4) {
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    let join = new Clifford(this.value).meetJoin(
+      new Clifford(other.value),
+      threshold
+    )[1];
+    join = this.rescaleValue(join, persistence, threshold);
+    return new Temperament(this.algebra, join, this.subgroup);
+  }
+  kernelMeet(other: Temperament) {
+    return this.valJoin(other);
+  }
+
+  valMeet(other: Temperament, persistence = 100, threshold = 1e-4) {
+    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    let meet = new Clifford(this.value).meetJoin(
+      new Clifford(other.value),
+      threshold
+    )[0];
+    meet = this.rescaleValue(meet, persistence, threshold);
+    return new Temperament(this.algebra, meet, this.subgroup);
+  }
+  kernelJoin(other: Temperament) {
+    return this.valMeet(other);
+  }
+
   static fromVals(vals: (Val | number | string)[], subgroup: SubgroupValue) {
     const subgroup_ = new Subgroup(subgroup);
     const Clifford = getAlgebra(subgroup_.basis.length);
@@ -377,11 +466,7 @@ export class Temperament extends BaseTemperament {
       }
       return Clifford.fromVector(val);
     });
-    return new Temperament(
-      Clifford,
-      promotedVals.reduce((a, b) => wedge(a, b)),
-      subgroup_
-    );
+    return new Temperament(Clifford, wedge(...promotedVals), subgroup_);
   }
 
   static fromCommas(
@@ -409,11 +494,7 @@ export class Temperament extends BaseTemperament {
       Clifford.fromVector(subgroup_.resolveMonzo(comma, stripCommas)).dual()
     );
 
-    return new Temperament(
-      Clifford,
-      promotedCommas.reduce((a, b) => vee(a, b)),
-      subgroup_
-    );
+    return new Temperament(Clifford, vee(...promotedCommas), subgroup_);
   }
 
   static fromPrefix(

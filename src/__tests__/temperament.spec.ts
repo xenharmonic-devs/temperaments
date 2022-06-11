@@ -416,6 +416,33 @@ describe('Temperament', () => {
     expect(dot(pinkan, semifourth)).toBeCloseTo(248.868);
     expect(mmod(dot(pinkan, g), 1200)).toBeCloseTo(1200 - 248.868);
   });
+
+  it('can val-join temperaments', () => {
+    const edo12 = Temperament.fromVals([12], 7);
+    const edo19 = Temperament.fromVals([19], 7);
+    const meantone = edo12.valJoin(edo19);
+
+    const expected = Temperament.fromVals([12, 19], 7);
+    meantone.canonize();
+    expected.canonize();
+    expect(meantone.equals(expected)).toBeTruthy();
+
+    const edo31 = Temperament.fromVals([31], 7);
+    const jointone = meantone.valJoin(edo31);
+    jointone.canonize();
+    expect(meantone.equals(jointone)).toBeTruthy();
+  });
+
+  it('can val-meet temperaments', () => {
+    const meantone = Temperament.fromVals([12, 19], 7);
+    const flattone = Temperament.fromCommas(['81/80', '525/512']);
+    const nineteen = meantone.valMeet(flattone);
+
+    const expected = Temperament.fromVals([19], 7);
+    nineteen.canonize();
+    expected.canonize();
+    expect(nineteen.equals(expected)).toBeTruthy();
+  });
 });
 
 describe('Free Temperament', () => {
