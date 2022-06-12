@@ -1,13 +1,6 @@
 import {dot, Monzo, MonzoValue} from './monzo';
 import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
-import {
-  binomial,
-  gcd,
-  iteratedEuclid,
-  FractionValue,
-  mmod,
-  cachedLinSolve,
-} from './utils';
+import {binomial, gcd, iteratedEuclid, FractionValue, mmod} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
@@ -203,37 +196,46 @@ abstract class BaseTemperament {
     );
   }
 
-  jiMapping(generators: number[][], tolerance = 1e-5) {
+  // JI is a slight misnomer here as we're dealing with formal primes only
+  jiMapping(generators: number[][], threshold = 1e-5) {
     if (generators.length !== this.getRank()) {
       throw new Error('Number of basis generators must match rank');
     }
     const Clifford = getAlgebra(this.algebra.dimensions, true);
 
-    // Not real commas with integer components, but we're not using them in the final result anyway
-    const commas = new Clifford(this.value.dual())
-      .bladeFactorize()[0]
-      .map(b => [...b.vector()]);
-    const basis = generators.concat(commas);
+    const gens = generators.map(g => Clifford.fromVector(g));
+    const commaWedge = new Clifford(this.value.dual());
 
-    const primes = [];
-    for (let i = 0; i < this.algebra.dimensions; ++i) {
-      const prime = Array(this.algebra.dimensions).fill(0);
-      prime[i] = 1;
-      primes.push(prime);
+    const hyperWedge = wedge(...gens).wedge(commaWedge);
+
+    // Formal primes
+    const primeMaps = [];
+
+    for (let i = 0; i < Clifford.dimensions; ++i) {
+      const map = [];
+      let sign = 1;
+      for (let j = 0; j < generators.length; ++j) {
+        let primeWedge = Clifford.basisBlade(i);
+        for (let k = 0; k < generators.length; ++k) {
+          if (j === k) {
+            continue;
+          }
+          primeWedge = primeWedge.wedge(gens[k]);
+        }
+        map.push(
+          primeWedge.wedge(commaWedge).invScale(hyperWedge, threshold) * sign
+        );
+        sign = -sign;
+      }
+      primeMaps.push(map);
     }
-    // Calculate how each prime maps
-    const result_ = [];
-    for (let i = 0; i < primes.length; ++i) {
-      result_.push(
-        cachedLinSolve(primes[i], basis, tolerance).slice(0, generators.length)
-      );
-    }
+
     // Transpose to get the mapping vectors
     const result = [];
     for (let i = 0; i < generators.length; ++i) {
       const row = [];
-      for (let j = 0; j < result_.length; ++j) {
-        row.push(Math.round(result_[j][i]));
+      for (let j = 0; j < primeMaps.length; ++j) {
+        row.push(primeMaps[j][i]);
       }
       result.push(row);
     }
