@@ -51,6 +51,58 @@ describe('Temperament', () => {
     expect(natsToCents(dot(meantone, fifth))).toBeCloseTo(696.239);
   });
 
+  it('calculates quarter-comma meantone when constrained to pure major thirds', () => {
+    const temperament = Temperament.fromCommas(['81/80']);
+    const meantone = temperament.getMapping({
+      units: 'nats',
+      constraints: ['5/4'],
+    });
+
+    const syntonicComma = fractionToMonzo('81/80');
+    const fifth = fractionToMonzoAndResidual('3/2', 3)[0];
+    const third = fractionToMonzo('5/4');
+    const octave = [1, 0, 0];
+
+    expect(dot(meantone, syntonicComma)).toBeCloseTo(0);
+    expect(dot(meantone, octave)).toBeCloseTo(Math.LN2);
+    expect(dot(meantone, fifth)).toBeCloseTo(Math.log(5) / 4, 4);
+    expect(dot(meantone, third)).toBeCloseTo(Math.log(5 / 4), 3);
+  });
+
+  it('calculates meantone constrained to pure major sixths', () => {
+    const temperament = Temperament.fromCommas(['81/80']);
+    const meantone = temperament.getMapping({
+      units: 'nats',
+      constraints: ['5/3'],
+    });
+
+    const syntonicComma = fractionToMonzo('81/80');
+    const sixth = fractionToMonzo('5/3');
+    const octave = [1, 0, 0];
+
+    expect(dot(meantone, syntonicComma)).toBeCloseTo(0);
+    expect(dot(meantone, octave)).toBeCloseTo(Math.LN2);
+    expect(dot(meantone, sixth)).toBeCloseTo(Math.log(5 / 3), 3);
+  });
+
+  it('calculates mint constrained to pure thirds and sevenths', () => {
+    const temperament = Temperament.fromCommas(['36/35']);
+    const mint = temperament.getMapping({
+      units: 'nats',
+      constraints: ['5/4', '7/4'],
+    });
+
+    const septimalQuarterTone = fractionToMonzo('36/35');
+    const third = fractionToMonzoAndResidual('5/4', 3)[0];
+    const seventh = fractionToMonzo('7/4');
+    const octave = [1, 0, 0, 0];
+
+    expect(dot(mint, septimalQuarterTone)).toBeCloseTo(0);
+    expect(dot(mint, octave)).toBeCloseTo(Math.LN2);
+    expect(dot(mint, third)).toBeCloseTo(Math.log(5 / 4), 3);
+    expect(dot(mint, seventh)).toBeCloseTo(Math.log(7 / 4), 3);
+  });
+
   it('reduces to the trivial temperament when given no vals', () => {
     const subgroup = new Subgroup(5);
     const temperament = Temperament.fromVals([], subgroup);

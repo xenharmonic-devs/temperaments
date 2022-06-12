@@ -25,6 +25,7 @@ export type TuningOptions = {
   temperEquaves?: boolean;
   primeMapping?: boolean;
   metric?: Metric;
+  constraints?: MonzoValue[];
 };
 
 // Parse a subgroup string like 2.15.11/7 to a list of logarithms
@@ -450,7 +451,24 @@ export class Temperament extends BaseTemperament {
 
     const jip = Clifford.fromVector(jip_.map((j, i) => j * metric[i]));
 
-    const weightedValue = new Clifford(this.value).applyWeights(metric);
+    let weightedValue = new Clifford(this.value).applyWeights(metric);
+
+    const constraints_ = [...(options.constraints || [])];
+    if (options.temperEquaves && constraints_.length) {
+      throw new Error('Constraints only implemented with pure equaves');
+    }
+    const purePlane = Clifford.basisBlade(0).dual();
+
+    const constraints = constraints_.map(constraint =>
+      Clifford.fromVector(
+        this.subgroup.resolveMonzo(constraint).map((c, i) => c * jip_[i])
+      )
+    );
+
+    if (constraints.length) {
+      const constraintPlane = jip.wedge(wedge(...constraints).dotL(purePlane));
+      weightedValue = weightedValue.vee(constraintPlane);
+    }
 
     const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
     let mapping = [...projected.vector().map((p, i) => p / metric[i])];
