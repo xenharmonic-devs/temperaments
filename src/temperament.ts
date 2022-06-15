@@ -1,6 +1,13 @@
 import {dot, Monzo, MonzoValue} from './monzo';
-import Algebra, {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
-import {binomial, gcd, iteratedEuclid, FractionValue, mmod} from './utils';
+import {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
+import {
+  binomial,
+  gcd,
+  iteratedEuclid,
+  FractionValue,
+  mmod,
+  getAlgebra,
+} from './utils';
 import Fraction from 'fraction.js';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
@@ -41,26 +48,6 @@ export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
 }
 
-const ALGEBRA_CACHES: Map<number, typeof AlgebraElement>[] = [
-  new Map(),
-  new Map(),
-];
-function getAlgebra(dimensions: number, real = false) {
-  const cache = real ? ALGEBRA_CACHES[0] : ALGEBRA_CACHES[1];
-  if (cache.has(dimensions)) {
-    return cache.get(dimensions)!;
-  }
-  const baseType = real ? Float64Array : Int32Array;
-  const algebra = Algebra(dimensions, 0, 0, baseType);
-  cache.set(dimensions, algebra);
-  return algebra;
-}
-
-export function clearCache() {
-  ALGEBRA_CACHES[0].clear();
-  ALGEBRA_CACHES[1].clear();
-}
-
 abstract class BaseTemperament {
   algebra: typeof AlgebraElement; // Clifford Algebra
   value: AlgebraElement; // Multivector of the Clifford Algebra
@@ -76,6 +63,63 @@ abstract class BaseTemperament {
   abstract valMeet(other: BaseTemperament): BaseTemperament;
   abstract kernelJoin(other: BaseTemperament): BaseTemperament;
   abstract kernelMeet(other: BaseTemperament): BaseTemperament;
+
+  calculateTenneyEuclid(jip: Mapping, metric: Metric) {
+    const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
+
+    const jip_ = Clifford.fromVector(jip.map((j, i) => j * metric[i]));
+
+    const weightedValue = new Clifford(this.value).applyWeights(metric);
+
+    const projected = jip_.dotL(weightedValue.inverse()).dotL(weightedValue);
+    return [...projected.vector().map((p, i) => p / metric[i])];
+  }
+
+  calculateCTE(jip: Mapping, metric: Metric, constraints: Monzo[]) {
+    const PGA = getAlgebra(this.algebra.dimensions, 'PGA');
+    const one = PGA.scalar();
+    const e0 = PGA.basisBlade(0); // Null blade
+    const pse = e0.dual(); // Euclidean pseudoscalar
+
+    const dualMetric = [1, ...metric.map(weight => 1 / weight)];
+
+    function promote(element: AlgebraElement) {
+      element = element.dual();
+      const components = Array(PGA.size).fill(0);
+      for (let i = 0; i < element.length; ++i) {
+        components[i << 1] = element[i];
+      }
+      return new PGA(components).applyWeights(dualMetric);
+    }
+
+    function point(x: number[]) {
+      return one.sub(e0.mul(PGA.fromVector([0, ...x]))).mul(pse);
+    }
+
+    function unpoint(point: AlgebraElement) {
+      const vec = point.dual().vector();
+      return [...vec.slice(1).map(c => c / vec[0])];
+    }
+
+    function proj(x: AlgebraElement, y: AlgebraElement) {
+      return y.inverse().mul(y.dotL(x));
+    }
+
+    let temperament = promote(this.value);
+
+    constraints.forEach(constraint => {
+      const distance = dot(jip, constraint);
+      const constraintPlane = PGA.fromVector([
+        -distance,
+        ...constraint,
+      ]).applyWeights(dualMetric);
+      temperament = temperament.wedge(constraintPlane);
+    });
+
+    const jip_ = point(jip.map((j, i) => j * metric[i]));
+
+    return unpoint(proj(jip_, temperament)).map((c, i) => c / metric[i]);
+  }
 
   periodGenerator(options?: TuningOptions): [number, number] {
     const mappingOptions = Object.assign({}, options || {});
@@ -202,7 +246,7 @@ abstract class BaseTemperament {
     if (generators.length !== this.getRank()) {
       throw new Error('Number of basis generators must match rank');
     }
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
 
     const gens = generators.map(g => Clifford.fromVector(g));
     const commaWedge = new Clifford(this.value.dual());
@@ -293,14 +337,26 @@ export class FreeTemperament extends BaseTemperament {
 
     const metric = options.metric || this.jip.map(j => 1 / j);
 
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    const constraints: Monzo[] = [];
 
-    const jip = Clifford.fromVector(this.jip.map((j, i) => j * metric[i]));
+    (options.constraints || []).forEach(constraint => {
+      if (
+        Array.isArray(constraint) &&
+        !(constraint.length === 2 && typeof constraint[0] === 'string')
+      ) {
+        constraints.push(constraint as Monzo);
+      } else {
+        throw new Error('Free temperament constraints must be in monzo form');
+      }
+    });
 
-    const weightedValue = new Clifford(this.value).applyWeights(metric);
+    let mapping: Mapping;
 
-    const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
-    const mapping = [...projected.vector().map((p, i) => p / metric[i])];
+    if (constraints.length) {
+      mapping = this.calculateCTE(this.jip, metric, constraints);
+    } else {
+      mapping = this.calculateTenneyEuclid(this.jip, metric);
+    }
 
     if (!options.temperEquaves) {
       const purifier = this.jip[0] / mapping[0];
@@ -318,7 +374,7 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   valJoin(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let join = new Clifford(this.value).meetJoin(
       new Clifford(other.value),
       threshold
@@ -331,7 +387,7 @@ export class FreeTemperament extends BaseTemperament {
   }
 
   valMeet(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let meet = new Clifford(this.value).meetJoin(
       new Clifford(other.value),
       threshold
@@ -379,7 +435,7 @@ export class FreeTemperament extends BaseTemperament {
 
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
     const dims = jip.length;
-    const Clifford = getAlgebra(dims, true);
+    const Clifford = getAlgebra(dims, 'float64');
 
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));
 
@@ -444,34 +500,21 @@ export class Temperament extends BaseTemperament {
 
   getMapping(options?: TuningOptions): Mapping {
     options = options || {};
-    const jip_ = this.subgroup.jip();
-    const metric = options.metric || jip_.map(j => 1 / j);
+    const jip = this.subgroup.jip();
+    const metric = options.metric || jip.map(j => 1 / j);
 
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
-
-    const jip = Clifford.fromVector(jip_.map((j, i) => j * metric[i]));
-
-    let weightedValue = new Clifford(this.value).applyWeights(metric);
-
-    const constraints_ = [...(options.constraints || [])];
-    if (options.temperEquaves && constraints_.length) {
-      throw new Error('Constraints only implemented with pure equaves');
-    }
-    const purePlane = Clifford.basisBlade(0).dual();
-
-    const constraints = constraints_.map(constraint =>
-      Clifford.fromVector(
-        this.subgroup.resolveMonzo(constraint).map((c, i) => c * jip_[i])
-      )
+    const constraints = (options.constraints || []).map(constraint =>
+      this.subgroup.resolveMonzo(constraint)
     );
 
+    let mapping: Mapping;
+
     if (constraints.length) {
-      const constraintPlane = jip.wedge(wedge(...constraints).dotL(purePlane));
-      weightedValue = weightedValue.vee(constraintPlane);
+      mapping = this.calculateCTE(jip, metric, constraints);
+    } else {
+      mapping = this.calculateTenneyEuclid(jip, metric);
     }
 
-    const projected = jip.dotL(weightedValue.inverse()).dotL(weightedValue);
-    let mapping = [...projected.vector().map((p, i) => p / metric[i])];
     if (!options.temperEquaves) {
       const purifier = Math.log(this.subgroup.basis[0].valueOf()) / mapping[0];
       mapping = mapping.map(component => component * purifier);
@@ -489,7 +532,7 @@ export class Temperament extends BaseTemperament {
   }
 
   valJoin(other: Temperament, persistence = 100, threshold = 1e-4) {
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let join = new Clifford(this.value).meetJoin(
       new Clifford(other.value),
       threshold
@@ -502,7 +545,7 @@ export class Temperament extends BaseTemperament {
   }
 
   valMeet(other: Temperament, persistence = 100, threshold = 1e-4) {
-    const Clifford = getAlgebra(this.algebra.dimensions, true);
+    const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let meet = new Clifford(this.value).meetJoin(
       new Clifford(other.value),
       threshold
@@ -568,7 +611,7 @@ export class Temperament extends BaseTemperament {
   ) {
     const subgroup_ = new Subgroup(subgroup);
     const dims = subgroup_.basis.length;
-    const Clifford = getAlgebra(dims, true);
+    const Clifford = getAlgebra(dims, 'float64');
 
     const jip = subgroup_.jip();
     const jip1 = Clifford.fromVector(jip.map(j => j / jip[0]));

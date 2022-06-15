@@ -55,7 +55,7 @@ describe('Temperament', () => {
     const temperament = Temperament.fromCommas(['81/80']);
     const meantone = temperament.getMapping({
       units: 'nats',
-      constraints: ['5/4'],
+      constraints: ['2/1', '5/4'],
     });
 
     const syntonicComma = fractionToMonzo('81/80');
@@ -73,7 +73,7 @@ describe('Temperament', () => {
     const temperament = Temperament.fromCommas(['81/80']);
     const meantone = temperament.getMapping({
       units: 'nats',
-      constraints: ['5/3'],
+      constraints: ['2/1', '5/3'],
     });
 
     const syntonicComma = fractionToMonzo('81/80');
@@ -89,7 +89,7 @@ describe('Temperament', () => {
     const temperament = Temperament.fromCommas(['36/35']);
     const mint = temperament.getMapping({
       units: 'nats',
-      constraints: ['5/4', '7/4'],
+      constraints: ['2/1', '5/4', '7/4'],
     });
 
     const septimalQuarterTone = fractionToMonzo('36/35');
@@ -101,6 +101,20 @@ describe('Temperament', () => {
     expect(dot(mint, octave)).toBeCloseTo(Math.LN2);
     expect(dot(mint, third)).toBeCloseTo(Math.log(5 / 4), 3);
     expect(dot(mint, seventh)).toBeCloseTo(Math.log(7 / 4), 3);
+  });
+
+  it('calculates CTE septimal meantone', () => {
+    const temperament = Temperament.fromVals([12, 19], 7);
+
+    const meantone = temperament.getMapping({
+      constraints: ['2/1'],
+    });
+
+    expect(meantone.length).toBe(4);
+    expect(meantone[0]).toBeCloseTo(1200);
+    expect(meantone[1]).toBeCloseTo(1896.9521);
+    expect(meantone[2]).toBeCloseTo(2787.8085);
+    expect(meantone[3]).toBeCloseTo(3369.5214);
   });
 
   it('reduces to the trivial temperament when given no vals', () => {
