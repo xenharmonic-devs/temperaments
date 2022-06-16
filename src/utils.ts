@@ -172,9 +172,9 @@ export function getAlgebra(
   const baseType = ALGEBRA_BASE_TYPES[algebraType];
   let algebra: typeof AlgebraElement;
   if (algebraType === 'PGA') {
-    algebra = Algebra(dimensions, 0, 1, baseType);
+    algebra = Algebra(dimensions, 0, 1, {baseType});
   } else {
-    algebra = Algebra(dimensions, 0, 0, baseType);
+    algebra = Algebra(dimensions, 0, 0, {baseType});
   }
   cache.set(dimensions, algebra);
   return algebra;
