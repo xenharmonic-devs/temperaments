@@ -23,7 +23,7 @@ export type Comma = number[];
 
 // The weighting vector
 // Temperaments are stored as integers; Applied as needed.
-export type Metric = number[];
+export type Weights = number[];
 
 export type PitchUnits = 'ratio' | 'cents' | 'nats';
 
@@ -31,7 +31,7 @@ export type TuningOptions = {
   units?: PitchUnits;
   temperEquaves?: boolean;
   primeMapping?: boolean;
-  metric?: Metric;
+  weights?: Weights;
   constraints?: MonzoValue[];
 };
 
@@ -64,24 +64,24 @@ abstract class BaseTemperament {
   abstract kernelJoin(other: BaseTemperament): BaseTemperament;
   abstract kernelMeet(other: BaseTemperament): BaseTemperament;
 
-  calculateTenneyEuclid(jip: Mapping, metric: Metric) {
+  calculateTenneyEuclid(jip: Mapping, weights: Weights) {
     const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
 
-    const jip_ = Clifford.fromVector(jip.map((j, i) => j * metric[i]));
+    const jip_ = Clifford.fromVector(jip.map((j, i) => j * weights[i]));
 
-    const weightedValue = new Clifford(this.value).applyWeights(metric);
+    const weightedValue = new Clifford(this.value).applyWeights(weights);
 
     const projected = jip_.dotL(weightedValue.inverse()).dotL(weightedValue);
-    return [...projected.vector().map((p, i) => p / metric[i])];
+    return [...projected.vector().map((p, i) => p / weights[i])];
   }
 
-  calculateCTE(jip: Mapping, metric: Metric, constraints: Monzo[]) {
+  calculateCTE(jip: Mapping, weights: Weights, constraints: Monzo[]) {
     const PGA = getAlgebra(this.algebra.dimensions, 'PGA');
     const one = PGA.scalar();
     const e0 = PGA.basisBlade(0); // Null blade
     const pse = e0.dual(); // Euclidean pseudoscalar
 
-    const dualMetric = [1, ...metric.map(weight => 1 / weight)];
+    const dualWeights = [1, ...weights.map(weight => 1 / weight)];
 
     function promote(element: AlgebraElement) {
       element = element.dual();
@@ -89,7 +89,7 @@ abstract class BaseTemperament {
       for (let i = 0; i < element.length; ++i) {
         components[i << 1] = element[i];
       }
-      return new PGA(components).applyWeights(dualMetric);
+      return new PGA(components).applyWeights(dualWeights);
     }
 
     function point(x: number[]) {
@@ -112,13 +112,13 @@ abstract class BaseTemperament {
       const constraintPlane = PGA.fromVector([
         -distance,
         ...constraint,
-      ]).applyWeights(dualMetric);
+      ]).applyWeights(dualWeights);
       temperament = temperament.wedge(constraintPlane);
     });
 
-    const jip_ = point(jip.map((j, i) => j * metric[i]));
+    const jip_ = point(jip.map((j, i) => j * weights[i]));
 
-    return unpoint(proj(jip_, temperament)).map((c, i) => c / metric[i]);
+    return unpoint(proj(jip_, temperament)).map((c, i) => c / weights[i]);
   }
 
   periodGenerator(options?: TuningOptions): [number, number] {
@@ -335,7 +335,7 @@ export class FreeTemperament extends BaseTemperament {
       throw new Error('Free temperaments cannot be interpreted as primes');
     }
 
-    const metric = options.metric || this.jip.map(j => 1 / j);
+    const weights = options.weights || this.jip.map(j => 1 / j);
 
     const constraints: Monzo[] = [];
 
@@ -353,9 +353,9 @@ export class FreeTemperament extends BaseTemperament {
     let mapping: Mapping;
 
     if (constraints.length) {
-      mapping = this.calculateCTE(this.jip, metric, constraints);
+      mapping = this.calculateCTE(this.jip, weights, constraints);
     } else {
-      mapping = this.calculateTenneyEuclid(this.jip, metric);
+      mapping = this.calculateTenneyEuclid(this.jip, weights);
     }
 
     if (!options.temperEquaves) {
@@ -501,7 +501,7 @@ export class Temperament extends BaseTemperament {
   getMapping(options?: TuningOptions): Mapping {
     options = options || {};
     const jip = this.subgroup.jip();
-    const metric = options.metric || jip.map(j => 1 / j);
+    const weights = options.weights || jip.map(j => 1 / j);
 
     const constraints = (options.constraints || []).map(constraint =>
       this.subgroup.resolveMonzo(constraint)
@@ -510,9 +510,9 @@ export class Temperament extends BaseTemperament {
     let mapping: Mapping;
 
     if (constraints.length) {
-      mapping = this.calculateCTE(jip, metric, constraints);
+      mapping = this.calculateCTE(jip, weights, constraints);
     } else {
-      mapping = this.calculateTenneyEuclid(jip, metric);
+      mapping = this.calculateTenneyEuclid(jip, weights);
     }
 
     if (!options.temperEquaves) {
