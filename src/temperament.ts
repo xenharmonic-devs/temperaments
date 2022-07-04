@@ -25,7 +25,7 @@ export type Comma = number[];
 // Temperaments are stored as integers; Applied as needed.
 export type Weights = number[];
 
-export type PitchUnits = 'ratio' | 'cents' | 'nats';
+export type PitchUnits = 'ratio' | 'cents' | 'nats' | 'semitones';
 
 export type TuningOptions = {
   units?: PitchUnits;
@@ -46,6 +46,14 @@ export function natsToCents(nats: number) {
 
 export function centsToNats(cents: number) {
   return (cents / 1200) * Math.LN2;
+}
+
+export function natsToSemitones(nats: number) {
+  return (nats / Math.LN2) * 12;
+}
+
+export function semitonesToNats(semitones: number) {
+  return (semitones / 12) * Math.LN2;
 }
 
 abstract class BaseTemperament {
@@ -137,6 +145,9 @@ abstract class BaseTemperament {
     }
     if (options?.units === 'ratio') {
       return [Math.exp(period), Math.exp(generator)];
+    }
+    if (options?.units === 'semitones') {
+      return [natsToSemitones(period), natsToSemitones(generator)];
     }
     return [natsToCents(period), natsToCents(generator)];
   }
@@ -312,6 +323,9 @@ export class FreeTemperament extends BaseTemperament {
     if (options?.units === 'ratio') {
       return Math.exp(result);
     }
+    if (options?.units === 'semitones') {
+      return natsToSemitones(result);
+    }
     return natsToCents(result);
   }
 
@@ -369,6 +383,9 @@ export class FreeTemperament extends BaseTemperament {
     }
     if (options.units === 'ratio') {
       return mapping.map(component => Math.exp(component));
+    }
+    if (options.units === 'semitones') {
+      return mapping.map(component => natsToSemitones(component));
     }
     return mapping.map(component => natsToCents(component));
   }
@@ -487,6 +504,9 @@ export class Temperament extends BaseTemperament {
     if (options.units === 'ratio') {
       return Math.exp(result);
     }
+    if (options.units === 'semitones') {
+      return natsToSemitones(result);
+    }
     return natsToCents(result);
   }
 
@@ -527,6 +547,9 @@ export class Temperament extends BaseTemperament {
     }
     if (options.units === 'ratio') {
       return mapping.map(component => Math.exp(component));
+    }
+    if (options.units === 'semitones') {
+      return mapping.map(component => natsToSemitones(component));
     }
     return mapping.map(component => natsToCents(component));
   }
