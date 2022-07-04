@@ -353,9 +353,9 @@ describe('Temperament', () => {
   it('can figure out the period and a generator for meantone', () => {
     const syntonicComma = fractionToMonzo(new Fraction(81, 80));
     const temperament = Temperament.fromCommas([syntonicComma]);
-    const [divisions, generator] = temperament.divisionsGenerator();
+    const [numPeriods, generator] = temperament.numPeriodsGenerator();
 
-    expect(divisions).toBe(1);
+    expect(numPeriods).toBe(1);
     expect(generator.length).toBe(3);
 
     const meantone = temperament.getMapping();
@@ -470,7 +470,7 @@ describe('Temperament', () => {
     );
     const pinkan = temperament.getMapping();
 
-    const [d, g] = temperament.divisionsGenerator();
+    const [d, g] = temperament.numPeriodsGenerator();
 
     const semifourth = subgroup.toMonzoAndResidual(new Fraction(15, 13))[0];
     const octave = [1, 0, 0, 0];
@@ -604,7 +604,7 @@ describe('Free Temperament', () => {
     );
     const pinkan = temperament.getMapping();
 
-    const [d, g] = temperament.divisionsGenerator();
+    const [d, g] = temperament.numPeriodsGenerator();
 
     const semifourth_ = fractionToMonzo(new Fraction(15, 13));
     const semifourth = [semifourth_[0], semifourth_[1], semifourth_[5], 0];

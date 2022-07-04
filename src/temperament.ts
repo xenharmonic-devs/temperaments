@@ -127,9 +127,9 @@ abstract class BaseTemperament {
     mappingOptions.primeMapping = false;
     const mapping = this.getMapping(mappingOptions);
 
-    const [divisions, generatorMonzo] = this.divisionsGenerator();
+    const [numPeriods, generatorMonzo] = this.numPeriodsGenerator();
 
-    const period = mapping[0] / divisions;
+    const period = mapping[0] / numPeriods;
     let generator = dot(mapping, generatorMonzo);
     generator = Math.min(mmod(generator, period), mmod(-generator, period));
     if (options?.units === 'nats') {
@@ -176,13 +176,13 @@ abstract class BaseTemperament {
   }
 
   // Assumes this is canonized rank-2
-  divisionsGenerator(): [number, Monzo] {
+  numPeriodsGenerator(): [number, Monzo] {
     const equaveUnit = this.algebra.basisBlade(0);
     const equaveProj = equaveUnit.dot(this.value).vector();
     const generator = iteratedEuclid(equaveProj);
-    const divisions = Math.abs(dot(generator, equaveProj));
+    const numPeriods = Math.abs(dot(generator, equaveProj));
 
-    return [divisions, generator];
+    return [numPeriods, generator];
   }
 
   getRank(): number {
