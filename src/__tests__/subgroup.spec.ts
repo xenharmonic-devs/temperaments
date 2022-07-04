@@ -117,5 +117,11 @@ describe('Fractional just intonation subgroup', () => {
   it('throws for invalid limits', () => {
     expect(() => new Subgroup(NaN)).toThrow();
     expect(() => new Subgroup(4)).toThrow();
+    expect(() => new Subgroup(-5)).toThrow();
+  });
+
+  it('throws for invalid fractions', () => {
+    expect(() => new Subgroup('1.2.3')).toThrow();
+    expect(() => new Subgroup('2.-3')).toThrow();
   });
 });

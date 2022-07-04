@@ -31,6 +31,14 @@ export class Subgroup {
     } else {
       this.basis = basis.map(b => new Fraction(b));
     }
+    this.basis.forEach(factor => {
+      if (factor.equals(1)) {
+        throw new Error('The number 1 is not a valid basis factor');
+      }
+      if (factor.compare(0) < 0) {
+        throw new Error('Basis factors must be positive');
+      }
+    });
   }
 
   toString() {
