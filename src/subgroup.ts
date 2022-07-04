@@ -15,9 +15,17 @@ export class Subgroup {
     if (basis instanceof Subgroup) {
       this.basis = basis.basis;
     } else if (typeof basis === 'number') {
-      this.basis = PRIMES.slice(0, PRIMES.indexOf(basis) + 1).map(
-        p => new Fraction(p)
-      );
+      if (isNaN(basis)) {
+        throw new Error('Invalid limit');
+      }
+      if (basis === 1) {
+        this.basis = [];
+      }
+      const index = PRIMES.indexOf(basis);
+      if (index < 0) {
+        throw new Error('Limit must be a prime');
+      }
+      this.basis = PRIMES.slice(0, index + 1).map(p => new Fraction(p));
     } else if (typeof basis === 'string') {
       this.basis = basis.split('.').map(b => new Fraction(b));
     } else {

@@ -113,4 +113,9 @@ describe('Fractional just intonation subgroup', () => {
         .equals(new Fraction(676, 675))
     ).toBeTruthy();
   });
+
+  it('throws for invalid limits', () => {
+    expect(() => new Subgroup(NaN)).toThrow();
+    expect(() => new Subgroup(4)).toThrow();
+  });
 });
