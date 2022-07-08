@@ -1,5 +1,4 @@
 export * from './color';
-export * from './constants';
 export * from './monzo';
 export * from './names';
 export * from './subgroup';

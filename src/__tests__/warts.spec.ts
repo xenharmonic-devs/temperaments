@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {arraysEqual} from '../utils';
+import {arraysEqual} from 'xen-dev-utils';
 
 import {fromWarts, toWarts} from '../warts';
 

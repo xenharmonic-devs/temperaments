@@ -1,9 +1,8 @@
-import {LOG_PRIMES} from './constants';
 import {dot, Monzo, monzoToFraction, MonzoValue, resolveMonzo} from './monzo';
 import {Temperament} from './temperament';
 import {getSingleCommaColorName, parseColorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
-import Fraction from 'fraction.js';
+import {Fraction, LOG_PRIMES} from 'xen-dev-utils';
 
 let rawCommaData: {[key: string]: string[]} | undefined;
 

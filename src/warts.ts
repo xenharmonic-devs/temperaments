@@ -1,4 +1,4 @@
-import {LOG_PRIMES} from './constants';
+import {LOG_PRIMES} from 'xen-dev-utils';
 
 const DIGIT_PATTERN = new RegExp('\\d');
 

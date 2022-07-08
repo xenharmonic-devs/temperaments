@@ -1,16 +1,18 @@
 import {dot, Monzo, MonzoValue} from './monzo';
 import {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
-import {
-  binomial,
-  gcd,
-  iteratedEuclid,
-  FractionValue,
-  mmod,
-  getAlgebra,
-} from './utils';
-import Fraction from 'fraction.js';
+import {getAlgebra} from './utils';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
+import {
+  binomial,
+  Fraction,
+  FractionValue,
+  gcd,
+  iteratedEuclid,
+  mmod,
+  natsToCents,
+  natsToSemitones,
+} from 'xen-dev-utils';
 
 // No interpretation in Geometric Algebra
 export type Mapping = number[];
@@ -38,22 +40,6 @@ export type TuningOptions = {
 // Parse a subgroup string like 2.15.11/7 to a list of logarithms
 export function parseJIP(token: string) {
   return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
-}
-
-export function natsToCents(nats: number) {
-  return (nats / Math.LN2) * 1200;
-}
-
-export function centsToNats(cents: number) {
-  return (cents / 1200) * Math.LN2;
-}
-
-export function natsToSemitones(nats: number) {
-  return (nats / Math.LN2) * 12;
-}
-
-export function semitonesToNats(semitones: number) {
-  return (semitones / 12) * Math.LN2;
 }
 
 abstract class BaseTemperament {

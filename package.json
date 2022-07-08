@@ -51,7 +51,7 @@
     "check-redundant": "node dist/scripts/check_redundant_names"
   },
   "dependencies": {
-    "fraction.js": "^4.2.0",
+    "xen-dev-utils": "github:xenharmonic-devs/xen-dev-utils",
     "ts-geometric-algebra": "^0.4.0"
   }
 }

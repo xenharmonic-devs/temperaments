@@ -1,8 +1,6 @@
 import {describe, it, expect} from 'vitest';
-import Fraction from 'fraction.js';
-
 import {Subgroup} from '../subgroup';
-import {arraysEqual} from '../utils';
+import {arraysEqual, Fraction} from 'xen-dev-utils';
 
 describe('Fractional just intonation subgroup', () => {
   it('can be constructed from a string', () => {

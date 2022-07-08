@@ -1,12 +1,5 @@
-import {
-  Temperament,
-  LOG_PRIMES,
-  dot,
-  natsToCents,
-  gcd,
-  monzosEqual,
-  getRank2GivenName,
-} from '../src/index';
+import {gcd, LOG_PRIMES, natsToCents} from 'xen-dev-utils';
+import {Temperament, dot, monzosEqual, getRank2GivenName} from '../src/index';
 import {Subgroup} from '../src/subgroup';
 
 const subgroup = new Subgroup(7);

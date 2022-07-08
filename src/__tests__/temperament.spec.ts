@@ -1,11 +1,14 @@
 import {describe, it, expect} from 'vitest';
-import Fraction from 'fraction.js';
-
 import {dot, fractionToMonzoAndResidual, fractionToMonzo} from '../monzo';
-import {Temperament, natsToCents, FreeTemperament} from '../temperament';
-import {LOG_PRIMES} from '../constants';
-import {arraysEqual, mmod} from '../utils';
+import {Temperament, FreeTemperament} from '../temperament';
 import {Subgroup} from '../subgroup';
+import {
+  arraysEqual,
+  Fraction,
+  LOG_PRIMES,
+  mmod,
+  natsToCents,
+} from 'xen-dev-utils';
 
 describe('Temperament', () => {
   it('supports equal temperaments', () => {

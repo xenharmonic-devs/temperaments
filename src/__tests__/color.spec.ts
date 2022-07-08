@@ -1,6 +1,5 @@
-import {arraysEqual} from '../utils';
-import Fraction from 'fraction.js';
 import {describe, it, expect, test} from 'vitest';
+import {arraysEqual, Fraction} from 'xen-dev-utils';
 
 import {ColorInterval, monzoToColorComma, colorComma} from '../color';
 import {fractionToMonzoAndResidual} from '../monzo';

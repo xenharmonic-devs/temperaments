@@ -1,6 +1,4 @@
-import {PRIMES} from './constants';
-import Fraction from 'fraction.js';
-import {FractionValue, NumberArray} from './utils';
+import {Fraction, FractionValue, NumberArray, PRIMES} from 'xen-dev-utils';
 
 // No interpretation in Geometric Algebra
 export type Monzo = number[];

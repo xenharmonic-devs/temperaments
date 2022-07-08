@@ -1,10 +1,9 @@
-import Fraction from 'fraction.js';
 import {describe, it, expect} from 'vitest';
 
 import {getCommaNames, getRank2GivenName, namedComma} from '../names';
 import {fractionToMonzo, fractionToMonzoAndResidual} from '../monzo';
 import {Temperament} from '../temperament';
-import {arraysEqual} from '../utils';
+import {arraysEqual, Fraction} from 'xen-dev-utils';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {

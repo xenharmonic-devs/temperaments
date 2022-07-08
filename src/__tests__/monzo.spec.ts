@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import Fraction from 'fraction.js';
+import {Fraction} from 'xen-dev-utils';
 
 import {
   numberToMonzoAndResidual,

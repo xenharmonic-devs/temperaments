@@ -1,4 +1,4 @@
-import {LOG_PRIMES, PRIMES} from './constants';
+import {LOG_PRIMES, PRIMES} from 'xen-dev-utils';
 import {dot, monzosEqual, type Monzo} from './monzo';
 import {Temperament} from './temperament';
 

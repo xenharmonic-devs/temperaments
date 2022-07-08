@@ -1,7 +1,6 @@
-import Fraction from 'fraction.js';
-import {LOG_PRIMES, PRIMES} from './constants';
+import {Fraction, FractionValue, LOG_PRIMES, PRIMES} from 'xen-dev-utils';
 import {dot, fractionToMonzo, MonzoValue, type Monzo} from './monzo';
-import {cachedLinSolve, FractionValue} from './utils';
+import {cachedLinSolve} from './utils';
 import {fromWarts, patentVal, toWarts} from './warts';
 
 export type Basis = Fraction[];
