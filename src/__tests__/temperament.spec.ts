@@ -528,6 +528,16 @@ describe('Temperament', () => {
     expect(arraysEqual(mapping[0], [3, 0, 7])).toBeTruthy();
     expect(arraysEqual(mapping[1], [0, 1, 0])).toBeTruthy();
   });
+
+  it('ignores extra linearly dependent vals', () => {
+    const meantone = Temperament.fromVals([12, 19, 31], 7);
+    expect(meantone.getRank()).toBe(2);
+  });
+
+  it('ignores extra linearly dependent commas', () => {
+    const twelve = Temperament.fromCommas(['81/80', '128/125', '2048/2025']);
+    expect(twelve.getRank()).toBe(1);
+  });
 });
 
 describe('Free Temperament', () => {

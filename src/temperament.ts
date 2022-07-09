@@ -1,5 +1,5 @@
 import {dot, Monzo, MonzoValue} from './monzo';
-import {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
+import {AlgebraElement, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
@@ -405,35 +405,39 @@ export class FreeTemperament extends BaseTemperament {
   static fromVals(vals: (Val | number | string)[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
-    if (!vals.length) {
-      return new FreeTemperament(Clifford, Clifford.scalar(), jip);
-    }
+    let value = Clifford.scalar();
 
-    const promotedVals = vals.map(val_ => {
+    vals.forEach(val_ => {
       let val: Val;
       if (typeof val_ === 'number' || typeof val_ === 'string') {
         val = fromWarts(val_, jip);
       } else {
         val = val_;
       }
-      return Clifford.fromVector(val);
+      const previousValue = value;
+      value = value.wedge(Clifford.fromVector(val));
+      if (value.isNil(0)) {
+        value = previousValue;
+      }
     });
 
-    return new FreeTemperament(Clifford, wedge(...promotedVals), jip);
+    return new FreeTemperament(Clifford, value, jip);
   }
 
   static fromCommas(commas: Comma[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
-    if (!commas.length) {
-      return new FreeTemperament(Clifford, Clifford.pseudoscalar(), jip);
-    }
+    let value = Clifford.pseudoscalar();
 
-    const promotedCommas = commas.map(comma =>
-      Clifford.fromVector(comma).dual()
-    );
+    commas.forEach(comma => {
+      const previousValue = value;
+      value = value.vee(Clifford.fromVector(comma).dual());
+      if (value.isNil(0)) {
+        value = previousValue;
+      }
+    });
 
-    return new FreeTemperament(Clifford, vee(...promotedCommas), jip);
+    return new FreeTemperament(Clifford, value, jip);
   }
 
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
@@ -570,19 +574,21 @@ export class Temperament extends BaseTemperament {
     const subgroup_ = new Subgroup(subgroup);
     const Clifford = getAlgebra(subgroup_.basis.length);
 
-    if (!vals.length) {
-      return new Temperament(Clifford, Clifford.scalar(), subgroup_);
-    }
-    const promotedVals = vals.map(val_ => {
+    let value = Clifford.scalar();
+    vals.forEach(val_ => {
       let val: Val;
       if (typeof val_ === 'number' || typeof val_ === 'string') {
         val = subgroup_.fromWarts(val_);
       } else {
         val = val_;
       }
-      return Clifford.fromVector(val);
+      const previousValue = value;
+      value = value.wedge(Clifford.fromVector(val));
+      if (value.isNil(0)) {
+        value = previousValue;
+      }
     });
-    return new Temperament(Clifford, wedge(...promotedVals), subgroup_);
+    return new Temperament(Clifford, value, subgroup_);
   }
 
   static fromCommas(
@@ -598,19 +604,22 @@ export class Temperament extends BaseTemperament {
     }
     const Clifford = getAlgebra(subgroup_.basis.length);
 
-    if (!commas.length) {
-      return new Temperament(Clifford, Clifford.pseudoscalar(), subgroup_);
-    }
-
     if (stripCommas === undefined) {
       stripCommas = subgroup === undefined;
     }
 
-    const promotedCommas = commas.map(comma =>
-      Clifford.fromVector(subgroup_.resolveMonzo(comma, stripCommas)).dual()
-    );
+    let value = Clifford.pseudoscalar();
+    commas.forEach(comma => {
+      const previousValue = value;
+      value = value.vee(
+        Clifford.fromVector(subgroup_.resolveMonzo(comma, stripCommas)).dual()
+      );
+      if (value.isNil(0)) {
+        value = previousValue;
+      }
+    });
 
-    return new Temperament(Clifford, vee(...promotedCommas), subgroup_);
+    return new Temperament(Clifford, value, subgroup_);
   }
 
   static fromPrefix(
