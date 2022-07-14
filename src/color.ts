@@ -216,12 +216,26 @@ function numberToLongExponent(n: number) {
   return result;
 }
 
+/**
+ * Interval of [Color Notation](https://en.xen.wiki/w/Color_notation).
+ */
 export class ColorInterval {
+  /** Zero indexed size class of the interval. A musical 6th has a stepspan of 5. */
   stepspan: number;
+  /** Complexity class of the interval. 0 = central, 1 = large, -1 = small etc. */
   magnitude: number;
+  /** The colors of the interval as a monzo with zero twos and threes components. */
   offWhite: Monzo;
+  /** Stepspan adjustment. Adds pythagorean commas. */
   poQu: number;
 
+  /**
+   * Construct an interval of Color Notation.
+   * @param stepspan Zero indexed size class of the interval. A musical 6th has a stepspan of 5.
+   * @param magnitude Complexity class of the interval. 0 = central, 1 = large, -1 = small etc.
+   * @param offWhite The colors of the interval as a monzo with zero twos and threes components.
+   * @param poQu Stepspan adjustment. Adds pythagorean commas.
+   */
   constructor(stepspan: number, magnitude: number, offWhite: Monzo, poQu = 0) {
     this.stepspan = stepspan;
     this.magnitude = magnitude;
@@ -229,12 +243,22 @@ export class ColorInterval {
     this.poQu = poQu;
   }
 
+  /**
+   * Check if a string can be parsed into a `ColorInterval` instance.
+   * @param token String to check if it can be parsed.
+   * @returns `true` if the string is valid input to `ColorInterval.fromString`.
+   */
   static canParse(token: string) {
     return /[Ls]*(([ygzr]|\d+[ou]+)((\^\d)|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)*)+[pq]*-*\d+/.test(
       token
     );
   }
 
+  /**
+   * Parse a string in abbreviated Color Notation into a `ColorInterval` instance.
+   * @param token String to parse.
+   * @returns Instance of `ColorInterval`.
+   */
   static fromString(token: string) {
     const offWhite = PSEUDO_EDO_MAPPING.map(() => 0);
     let magnitude = 0;
@@ -296,6 +320,10 @@ export class ColorInterval {
     return new ColorInterval(stepspan, magnitude, offWhite, poQu);
   }
 
+  /**
+   * Convert the interval into a monzo with integer components.
+   * @returns Array of exponents of consecutive prime numbers up to 31.
+   */
   toMonzo(): Monzo {
     const stepspan = this.stepspan - this.poQu;
     const spanPrime = dot(this.offWhite, PSEUDO_EDO_MAPPING);

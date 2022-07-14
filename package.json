@@ -31,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^14.11.2",
     "gts": "^3.1.0",
+    "typedoc": "^0.23.7",
     "typescript": "^4.6.4",
     "vitest": "^0.12.6"
   },
@@ -48,7 +49,8 @@
     "preenumerate": "npm run build",
     "enumerate": "node dist/scripts/enumerate_temperaments",
     "precheck-redundant": "npm run build",
-    "check-redundant": "node dist/scripts/check_redundant_names"
+    "check-redundant": "node dist/scripts/check_redundant_names",
+    "doc": "typedoc --entryPointStrategy packages . --name temperaments"
   },
   "dependencies": {
     "xen-dev-utils": "github:xenharmonic-devs/xen-dev-utils",

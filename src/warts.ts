@@ -34,7 +34,7 @@ export function toDivisionsModifications(
   return [divisions, modifications];
 }
 
-type MaybeJip = number[] | number;
+export type MaybeJip = number[] | number;
 
 function actuallyJip(jipOrNumberOfPrimes: number[] | number) {
   if (typeof jipOrNumberOfPrimes === 'number') {
