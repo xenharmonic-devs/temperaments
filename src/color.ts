@@ -389,9 +389,20 @@ export class ColorInterval {
    */
   static fromVerboseString(token: string, degree?: number) {
     if (degree === undefined) {
-      const [token_, degreeToken] = token.split(' ');
-      degree = VERBOSE_DEGREES[degreeToken.toLocaleLowerCase()];
-      token = token_;
+      let sign = 1;
+      let degreeToken: string;
+      const tokens = token.split(' ');
+      token = tokens[0];
+      if (tokens.length === 3) {
+        if (tokens[1].toLowerCase() !== 'negative') {
+          throw new Error(`Unrecognized mid-section '${tokens[1]}'`);
+        }
+        sign = -1;
+        degreeToken = tokens[2];
+      } else {
+        degreeToken = tokens[1];
+      }
+      degree = VERBOSE_DEGREES[degreeToken.toLowerCase()] * sign;
     }
     const [abbreviation, ordinal] = verboseToAbbreviation(token);
     if (ordinal !== 1) {

@@ -14,6 +14,7 @@ const INTERVALS = {
   'zo 3rd': '7/6',
   'gu third': '6/5',
   'Yo Third': '5/4',
+  'biruyo negative 2nd': '50/49',
 };
 
 describe('Color Notation intervals', () => {
