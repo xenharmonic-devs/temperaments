@@ -216,6 +216,67 @@ function numberToLongExponent(n: number) {
   return result;
 }
 
+const VERBOSE_DEGREES: {[key: string]: number} = {
+  unison: 1,
+  first: 1,
+  '1st': 1,
+
+  second: 2,
+  '2nd': 2,
+
+  third: 3,
+  '3rd': 3,
+
+  fourth: 4,
+  '4th': 4,
+
+  fifth: 5,
+  '5th': 5,
+
+  sixth: 6,
+  '6th': 6,
+
+  seventh: 7,
+  '7th': 7,
+
+  octave: 8,
+  eight: 8,
+  '8th': 8,
+
+  ninth: 9,
+  '9th': 9,
+
+  tenth: 10,
+  '10th': 10,
+
+  eleventh: 11,
+  '11th': 11,
+
+  twelfth: 12,
+  '12th': 12,
+
+  thirteenth: 13,
+  '13th': 13,
+
+  fourteenth: 14,
+  '14th': 14,
+
+  fifteenth: 15,
+  '15th': 15,
+
+  sixteenth: 16,
+  '16th': 16,
+
+  seventeenth: 17,
+  '17th': 17,
+
+  eighteenth: 18,
+  '18th': 18,
+
+  nineteenth: 19,
+  '19th': 19,
+};
+
 /**
  * Interval of [Color Notation](https://en.xen.wiki/w/Color_notation).
  */
@@ -256,7 +317,7 @@ export class ColorInterval {
 
   /**
    * Parse a string in abbreviated Color Notation into a `ColorInterval` instance.
-   * @param token String to parse.
+   * @param token String to parse such as 'zg5'.
    * @returns Instance of `ColorInterval`.
    */
   static fromString(token: string) {
@@ -321,6 +382,25 @@ export class ColorInterval {
   }
 
   /**
+   * Parse a string in verbose Color Notation into a `ColorInterval` instance.
+   * @param token String to parse such as 'Zogu Fifth'.
+   * @param degree Optional numeric degree.
+   * @returns Instance of `ColorInterval`.
+   */
+  static fromVerboseString(token: string, degree?: number) {
+    if (degree === undefined) {
+      const [token_, degreeToken] = token.split(' ');
+      degree = VERBOSE_DEGREES[degreeToken.toLocaleLowerCase()];
+      token = token_;
+    }
+    const [abbreviation, ordinal] = verboseToAbbreviation(token);
+    if (ordinal !== 1) {
+      throw new Error('Ordinals are not supported with intervals');
+    }
+    return ColorInterval.fromString(abbreviation + degree.toString());
+  }
+
+  /**
    * Convert the interval into a monzo with integer components.
    * @returns Array of exponents of consecutive prime numbers up to 31.
    */
@@ -342,7 +422,7 @@ export class ColorInterval {
   }
 }
 
-export function colorComma(token: string) {
+function verboseToAbbreviation(token: string): [string, number] {
   token = token.toLowerCase().replace('-', '');
   let shortToken = '';
   let exponent: null | string = null;
@@ -406,12 +486,17 @@ export function colorComma(token: string) {
     ordinal = UNICODE_EXPONENTS[exponent as keyof typeof UNICODE_EXPONENTS];
   }
 
-  token = shortToken + token;
+  return [shortToken + token, ordinal];
+}
 
+export function colorComma(token: string) {
+  const [abbreviation, ordinal] = verboseToAbbreviation(token);
   const segment: [number, Monzo][] = [];
   let degree = -2;
   while (true) {
-    const monzo = ColorInterval.fromString(token + degree.toString()).toMonzo();
+    const monzo = ColorInterval.fromString(
+      abbreviation + degree.toString()
+    ).toMonzo();
     const nats = dot(LOG_PRIMES, monzo);
     if (nats < 0) {
       break;
@@ -421,7 +506,9 @@ export function colorComma(token: string) {
   }
   degree = 1;
   while (segment.length < 7) {
-    const monzo = ColorInterval.fromString(token + degree.toString()).toMonzo();
+    const monzo = ColorInterval.fromString(
+      abbreviation + degree.toString()
+    ).toMonzo();
     const nats = dot(LOG_PRIMES, monzo);
     if (nats > 0) {
       segment.push([nats, monzo]);

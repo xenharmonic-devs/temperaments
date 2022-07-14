@@ -4,6 +4,19 @@ import {arraysEqual, Fraction} from 'xen-dev-utils';
 import {ColorInterval, monzoToColorComma, colorComma} from '../color';
 import {fractionToMonzoAndResidual} from '../monzo';
 
+const INTERVALS = {
+  'wa unison': '1/1',
+  'zogu 2nd': '21/20',
+  'gu second': '16/15',
+  'Ruyo Unison': '15/14',
+  'yo 2nd': '10/9',
+  'wa 2nd': '9/8',
+  'ru 2nd': '8/7',
+  'zo 3rd': '7/6',
+  'gu third': '6/5',
+  'Yo Third': '5/4',
+};
+
 describe('Color Notation intervals', () => {
   it('can be parsed from string', () => {
     const interval = ColorInterval.fromString('w5');
@@ -43,6 +56,16 @@ describe('Color Notation intervals', () => {
     const expected = fractionToMonzoAndResidual(new Fraction(5, 4), 11)[0];
     expect(arraysEqual(monzo, expected)).toBeTruthy();
   });
+
+  test.each(Object.entries(INTERVALS))(
+    'parses %s correctly',
+    (token, fraction) => {
+      const monzo = fractionToMonzoAndResidual(fraction, 11)[0];
+      expect(
+        arraysEqual(ColorInterval.fromVerboseString(token).toMonzo(), monzo)
+      ).toBeTruthy();
+    }
+  );
 });
 
 const COMMAS = {
