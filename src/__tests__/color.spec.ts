@@ -65,6 +65,15 @@ describe('Color Notation intervals', () => {
       ).toBeTruthy();
     }
   );
+
+  it('can be constructed from a fraction', () => {
+    const interval = ColorInterval.fromMonzo('40/21');
+    expect(interval.degree).toBe(7);
+    expect(interval.magnitude).toBeCloseTo(0);
+    expect(interval.poQu).toBe(0);
+    expect(interval.offWhite[2]).toBe(1);
+    expect(interval.offWhite[3]).toBe(-1);
+  });
 });
 
 const COMMAS = {

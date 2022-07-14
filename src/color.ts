@@ -1,4 +1,5 @@
 import {dot, LOG_PRIMES, Monzo, monzosEqual, PRIMES} from 'xen-dev-utils';
+import {MonzoValue, resolveMonzo} from './monzo';
 import {Temperament} from './temperament';
 
 const PSEUDO_EDO_MAPPING = [7, 11, 16, 20, 24, 26, 29, 30, 32, 34, 37];
@@ -397,6 +398,35 @@ export class ColorInterval {
       throw new Error('Ordinals are not supported with intervals');
     }
     return ColorInterval.fromString(abbreviation + degree.toString());
+  }
+
+  /**
+   * Convert a monzo or fraction to an interval of Color Notation.
+   * @param monzo Monzo or fraction to convert.
+   * @returns Color interval corresponding to the fraction.
+   */
+  static fromMonzo(monzo: MonzoValue) {
+    monzo = resolveMonzo(monzo);
+    if (monzo.length > PSEUDO_EDO_MAPPING.length) {
+      throw new Error('Too many components to represent in color notation');
+    }
+    const offWhite = [0, 0, ...monzo.slice(2)];
+    while (offWhite.length < PSEUDO_EDO_MAPPING.length) {
+      offWhite.push(0);
+    }
+    const magnitude = Math.round(monzo.slice(1).reduce((a, b) => a + b) / 7);
+    const stepspan = dot(monzo, PSEUDO_EDO_MAPPING);
+    return new ColorInterval(stepspan, magnitude, offWhite);
+  }
+
+  /**
+   * Get the (one-indexed) degree of the color interval.
+   */
+  get degree() {
+    if (this.stepspan < 0) {
+      return this.stepspan - 1;
+    }
+    return this.stepspan + 1;
   }
 
   /**
