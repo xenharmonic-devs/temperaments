@@ -1,15 +1,17 @@
-import {dot, Monzo, MonzoValue} from './monzo';
+import {MonzoValue} from './monzo';
 import {AlgebraElement, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts} from './warts';
 import {
   binomial,
+  dot,
   Fraction,
   FractionValue,
   gcd,
   iteratedEuclid,
   mmod,
+  Monzo,
   natsToCents,
   natsToSemitones,
 } from 'xen-dev-utils';

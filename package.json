@@ -54,6 +54,6 @@
   },
   "dependencies": {
     "xen-dev-utils": "github:xenharmonic-devs/xen-dev-utils",
-    "ts-geometric-algebra": "^0.4.0"
+    "ts-geometric-algebra": "^0.4.1"
   }
 }

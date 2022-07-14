@@ -1,5 +1,4 @@
-import {LOG_PRIMES, PRIMES} from 'xen-dev-utils';
-import {dot, monzosEqual, type Monzo} from './monzo';
+import {dot, LOG_PRIMES, Monzo, monzosEqual, PRIMES} from 'xen-dev-utils';
 import {Temperament} from './temperament';
 
 const PSEUDO_EDO_MAPPING = [7, 11, 16, 20, 24, 26, 29, 30, 32, 34, 37];

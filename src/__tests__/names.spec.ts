@@ -1,9 +1,13 @@
 import {describe, it, expect} from 'vitest';
 
 import {getCommaNames, getRank2GivenName, namedComma} from '../names';
-import {fractionToMonzo, fractionToMonzoAndResidual} from '../monzo';
 import {Temperament} from '../temperament';
-import {arraysEqual, Fraction} from 'xen-dev-utils';
+import {
+  arraysEqual,
+  Fraction,
+  toMonzo,
+  toMonzoAndResidual,
+} from 'xen-dev-utils';
 
 describe('Temperament namer', () => {
   it('knows about meantone', () => {
@@ -31,7 +35,7 @@ describe('Temperament namer', () => {
   });
 
   it('knows about blackwood', () => {
-    const limma = fractionToMonzoAndResidual(new Fraction(256, 243), 3)[0];
+    const limma = toMonzoAndResidual(new Fraction(256, 243), 3)[0];
     const temperament = Temperament.fromCommas([limma], 5);
     temperament.canonize();
     expect(getRank2GivenName(temperament)).toBe('Blackwood');
@@ -57,9 +61,7 @@ describe('Comma namer', () => {
 
   it('knows about the breedsma', () => {
     expect(
-      getCommaNames(fractionToMonzo(new Fraction(2401, 2400))).includes(
-        'breedsma'
-      )
+      getCommaNames(toMonzo(new Fraction(2401, 2400))).includes('breedsma')
     ).toBeTruthy();
   });
 

@@ -1,5 +1,13 @@
-import {Fraction, FractionValue, LOG_PRIMES, PRIMES} from 'xen-dev-utils';
-import {dot, fractionToMonzo, MonzoValue, type Monzo} from './monzo';
+import {
+  dot,
+  Fraction,
+  FractionValue,
+  LOG_PRIMES,
+  Monzo,
+  PRIMES,
+  toMonzo,
+} from 'xen-dev-utils';
+import {MonzoValue} from './monzo';
 import {cachedLinSolve} from './utils';
 import {fromWarts, patentVal, toWarts} from './warts';
 
@@ -99,7 +107,7 @@ export class Subgroup {
   }
 
   toPrimeMapping(mapping: number[]): number[] {
-    const basisMonzos = this.basis.map(b => fractionToMonzo(b));
+    const basisMonzos = this.basis.map(b => toMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 
     // Check if prime power subgroup
@@ -174,7 +182,7 @@ export class Subgroup {
         monzos.push(comma as Monzo);
         return;
       }
-      monzos.push(fractionToMonzo(comma as FractionValue));
+      monzos.push(toMonzo(comma as FractionValue));
     });
     if (!monzos.length) {
       return new Subgroup([]);

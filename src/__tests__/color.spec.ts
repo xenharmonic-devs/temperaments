@@ -1,8 +1,7 @@
 import {describe, it, expect, test} from 'vitest';
-import {arraysEqual, Fraction} from 'xen-dev-utils';
+import {arraysEqual, Fraction, toMonzoAndResidual} from 'xen-dev-utils';
 
 import {ColorInterval, monzoToColorComma, colorComma} from '../color';
-import {fractionToMonzoAndResidual} from '../monzo';
 
 const INTERVALS = {
   'wa unison': '1/1',
@@ -53,14 +52,14 @@ describe('Color Notation intervals', () => {
       0
     );
     const monzo = interval.toMonzo();
-    const expected = fractionToMonzoAndResidual(new Fraction(5, 4), 11)[0];
+    const expected = toMonzoAndResidual(new Fraction(5, 4), 11)[0];
     expect(arraysEqual(monzo, expected)).toBeTruthy();
   });
 
   test.each(Object.entries(INTERVALS))(
     'parses %s correctly',
     (token, fraction) => {
-      const monzo = fractionToMonzoAndResidual(fraction, 11)[0];
+      const monzo = toMonzoAndResidual(fraction, 11)[0];
       expect(
         arraysEqual(ColorInterval.fromVerboseString(token).toMonzo(), monzo)
       ).toBeTruthy();
