@@ -1,8 +1,8 @@
 import {MonzoValue} from './monzo';
 import {AlgebraElement, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
-import {Subgroup, SubgroupValue} from './subgroup';
-import {fromWarts} from './warts';
+import {Mapping, Subgroup, SubgroupValue} from './subgroup';
+import {fromWarts, Val} from './warts';
 import {
   binomial,
   dot,
@@ -16,13 +16,8 @@ import {
   natsToSemitones,
 } from 'xen-dev-utils';
 
-// No interpretation in Geometric Algebra
-export type Mapping = number[];
-
-// Promoted to vectors in Geometric Algebra
-export type Val = number[];
-
-// Promoted to pseudovectors in GA
+// Vals promoted to vectors in Geometric Algebra
+// Commas Promoted to pseudovectors in GA
 export type Comma = number[];
 
 // The weighting vector

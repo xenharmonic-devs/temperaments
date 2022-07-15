@@ -9,18 +9,41 @@ import {
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
 import {cachedLinSolve} from './utils';
-import {fromWarts, patentVal, toWarts} from './warts';
+import {fromWarts, patentVal, toWarts, Val} from './warts';
 
+/**
+ * Array of fractions intended as the basis / formal primes of a just intonation subgroup.
+ */
 export type Basis = Fraction[];
 
-export type SubgroupValue = number | string | number[] | Basis | Subgroup;
+/**
+ * Value that can be interpreted as the basis of a fractional just intonation subgroup.
+ * Numbers are interpreted as prime limits. `7` means 7-limit = first 4 primes.
+ * Strings such as `'2.3.13/5'` are interpreted as a period-separated array of fractions.
+ * An array of numbers/strings/fractions is normalized to Fraction instances.
+ * If another subgroup is passed it's basis is copied.
+ */
+export type SubgroupValue = number | string | FractionValue[] | Subgroup;
 
+/**
+ * A vector mapping (formal) primes to their logarithms or tempered versions thereof.
+ */
+export type Mapping = number[];
+
+/**
+ * Fractional just intonation subgroup.
+ */
 export class Subgroup {
+  /** Array of fractions forming the basis of the subgroup. */
   basis: Basis;
 
+  /**
+   * Construct a fractional just intonation subgroup.
+   * @param basis An array of fractions or a value that can be interpreted as a basis of the new subgroup.
+   */
   constructor(basis: SubgroupValue) {
     if (basis instanceof Subgroup) {
-      this.basis = basis.basis;
+      this.basis = basis.basis.map(b => new Fraction(b));
     } else if (typeof basis === 'number') {
       if (isNaN(basis)) {
         throw new Error('Invalid limit');
@@ -48,14 +71,27 @@ export class Subgroup {
     });
   }
 
+  /**
+   * Convert the subgroup to a string.
+   * @returns The basis as a period-joined string.
+   */
   toString() {
     return this.basis.map(b => b.toFraction()).join('.');
   }
 
-  jip() {
+  /**
+   * Just intonation point of the subgroup.
+   * @returns Array of natural logarithms of the basis factors.
+   */
+  jip(): Mapping {
     return this.basis.map(b => Math.log(b.valueOf()));
   }
 
+  /**
+   * Check equality between subgroups.
+   * @param other Another subgroup instance.
+   * @returns `true` if the subgroups are the same.
+   */
   equals(other: Subgroup) {
     if (this.basis.length !== other.basis.length) {
       return false;
@@ -67,6 +103,12 @@ export class Subgroup {
 
   // Please note that this assumes that the basis is somewhat regular.
   // The general solution would require doing Gauss-Jordan elimination over Fractions.
+  /**
+   * Convert a fraction to a monzo in the subgroup's basis.
+   * @param firstValue Fraction or the numerator of a fraction.
+   * @param secondValue Optional denominator of the fraction.
+   * @returns An array of basis exponents and a multiplicative residue that lies outside of the basis of the subgroup.
+   */
   toMonzoAndResidual(
     firstValue: FractionValue,
     secondValue?: number
@@ -88,25 +130,50 @@ export class Subgroup {
     return [monzo, fraction];
   }
 
+  /**
+   * Convert a monzo to a fraction according to the subgroup's basis.
+   * @param monzo Array of basis exponents.
+   * @returns The fraction corresponding to the monzo in the subgroup's basis.
+   */
   toFraction(monzo: Monzo) {
     return monzo
       .map((exponent, i) => this.basis[i].pow(exponent))
       .reduce((a, b) => a.mul(b));
   }
 
+  /**
+   * Calculate a patent val of the subgroup.
+   * @param divisions Number of divisions of the first basis factor.
+   * @returns Array of the number of steps corresponding to each basis factor.
+   */
   patentVal(divisions: number) {
     return patentVal(divisions, this.jip());
   }
 
-  fromWarts(token: number | string) {
-    return fromWarts(token, this.jip());
+  /**
+   * Calculate the val corresponding to the given warts as progressive modifications to the patent val.
+   * @param divisionsOrWarts Number of divisions of the first basis factor or a number followed by letters of the alphabet corresponding to the formal primes in order.
+   * @returns Array of the number of steps corresponding to each basis factor.
+   */
+  fromWarts(divisionsOrWarts: number | string) {
+    return fromWarts(divisionsOrWarts, this.jip());
   }
 
-  toWarts(val: number[]) {
+  /**
+   * Convert a val (step mapping) to a wart string.
+   * @param val Array of the number of steps corresponding to each basis factor.
+   * @returns The val as wart string such as `'17c'`.
+   */
+  toWarts(val: Val) {
     return toWarts(val, this.jip());
   }
 
-  toPrimeMapping(mapping: number[]): number[] {
+  /**
+   * Fill in or convert a subgroup mapping to a full prime mapping.
+   * @param mapping Mapping given in terms of the formal primes of the subgroup.
+   * @returns The mapping given in terms of consecutive primes.
+   */
+  toPrimeMapping(mapping: Mapping): Mapping {
     const basisMonzos = this.basis.map(b => toMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 
@@ -172,6 +239,11 @@ export class Subgroup {
     return cachedLinSolve(mapping_, transposed);
   }
 
+  /**
+   * Infer a prime subgroup based on an array of commas.
+   * @param commas Array of commas as fractions or monzos.
+   * @returns Smallest prime subgroup containing the commas.
+   */
   static inferPrimeSubgroup(commas: MonzoValue[]) {
     const monzos: Monzo[] = [];
     commas.forEach(comma => {
@@ -201,10 +273,21 @@ export class Subgroup {
   }
 
   // This should be used to strip monzos after infering prime subgroup
-  strip(comma: Monzo) {
+  /**
+   * Strip excess components from monzos.
+   * @param comma Monzo of a comma given in terms of prime exponents.
+   * @returns Monzo given in terms of the subgroup's basis.
+   */
+  strip(comma: Monzo): Monzo {
     return this.basis.map(b => comma[PRIMES.indexOf(b.n)]);
   }
 
+  /**
+   * Resolve a fraction into a monzo of this subgroup.
+   * @param interval Fraction or monzo to resolve.
+   * @param strip Strip away excess components. Should be set to `true` if the monzo is given in terms of prime exponents.
+   * @returns Monzo given in terms of the subgroup's basis.
+   */
   resolveMonzo(interval: MonzoValue, strip = false): Monzo {
     if (
       Array.isArray(interval) &&

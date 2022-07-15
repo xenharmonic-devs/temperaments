@@ -27,25 +27,25 @@ describe('Val to wart converter', () => {
           token += String.fromCharCode(97 + i);
         }
       }
-      expect(toWarts(fromWarts(token, 4))).toBe(token);
+      expect(toWarts(fromWarts(token, 7))).toBe(token);
     }
   });
 });
 
 describe('Wart to val converter', () => {
   it('converts 12', () => {
-    expect(arraysEqual(fromWarts('12', 3), [12, 19, 28])).toBeTruthy();
+    expect(arraysEqual(fromWarts('12', 5), [12, 19, 28])).toBeTruthy();
   });
   it('converts 12b', () => {
-    expect(arraysEqual(fromWarts('12b', 3), [12, 20, 28])).toBeTruthy();
+    expect(arraysEqual(fromWarts('12b', 5), [12, 20, 28])).toBeTruthy();
   });
   it('converts 12bb', () => {
-    expect(arraysEqual(fromWarts('12bb', 3), [12, 18, 28])).toBeTruthy();
+    expect(arraysEqual(fromWarts('12bb', 5), [12, 18, 28])).toBeTruthy();
   });
   it('converts 12c', () => {
-    expect(arraysEqual(fromWarts('12c', 3), [12, 19, 27])).toBeTruthy();
+    expect(arraysEqual(fromWarts('12c', 5), [12, 19, 27])).toBeTruthy();
   });
   it('converts 12ccc', () => {
-    expect(arraysEqual(fromWarts('12ccc', 3), [12, 19, 26])).toBeTruthy();
+    expect(arraysEqual(fromWarts('12ccc', 5), [12, 19, 26])).toBeTruthy();
   });
 });
