@@ -1,8 +1,13 @@
 import {FractionValue, Monzo, toMonzo} from 'xen-dev-utils';
 
-// No interpretation in Geometric Algebra
+/** Value that represents a rational number and can be normalized into a monzo. */
 export type MonzoValue = Monzo | FractionValue;
 
+/**
+ * Normalize value into a monzo.
+ * @param value Rational number as a number, string, fraction or a monzo.
+ * @returns An array of exponents of prime numbers.
+ */
 export function resolveMonzo(value: MonzoValue): Monzo {
   if (
     Array.isArray(value) &&

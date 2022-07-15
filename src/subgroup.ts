@@ -308,4 +308,14 @@ export class Subgroup {
       return monzo;
     }
   }
+
+  /**
+   * Check if the subgroup is non-composite and non-fractional.
+   * @returns `true` if the subgroup consists of primes only.
+   */
+  isPrimeSubgroup() {
+    return this.basis
+      .map(b => b.d === 1 && PRIMES.includes(b.n))
+      .reduce((a, b) => a && b);
+  }
 }

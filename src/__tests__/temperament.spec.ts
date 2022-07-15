@@ -414,7 +414,7 @@ describe('Temperament', () => {
     temperament.canonize();
     expect(temperament.subgroup.basis.length).toBe(3);
     const subgroup = new Subgroup('2.3.7');
-    const prefix = temperament.rankPrefix(2);
+    const prefix = temperament.rankPrefix();
     expect(prefix.length).toBe(2);
     expect(prefix[0]).toBe(2);
     expect(prefix[1]).toBe(1);
@@ -521,7 +521,7 @@ describe('Temperament', () => {
     const augmented = Temperament.fromVals([3, 12], 5);
     const period = [1 / 3, 0, 0]; // [-2, 0, 1] works too
     const tritave = [0, 1, 0];
-    const mapping = augmented.jiMapping([period, tritave]);
+    const mapping = augmented.basisMapping([period, tritave]);
 
     expect(mapping.length).toBe(2);
     expect(arraysEqual(mapping[0], [3, 0, 7])).toBeTruthy();

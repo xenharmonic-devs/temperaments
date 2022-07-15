@@ -1,4 +1,4 @@
-import {MonzoValue} from './monzo';
+import {MonzoValue, resolveMonzo} from './monzo';
 import {AlgebraElement, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
 import {Mapping, Subgroup, SubgroupValue} from './subgroup';
@@ -6,7 +6,6 @@ import {fromWarts, Val} from './warts';
 import {
   binomial,
   dot,
-  Fraction,
   FractionValue,
   gcd,
   iteratedEuclid,
@@ -18,30 +17,44 @@ import {
 
 // Vals promoted to vectors in Geometric Algebra
 // Commas Promoted to pseudovectors in GA
+
+/** Rational number representing a small musical interval in monzo form. */
 export type Comma = number[];
 
 // The weighting vector
 // Temperaments are stored as integers; Applied as needed.
+/** Importance weighting for the basis factors of a subgroup. */
 export type Weights = number[];
 
+/** Units of musical pitch.
+ * 'ratio' means multiplicative units.
+ * 'cents' corresponds to addive units worth 1/1200 of an octave.
+ * 'nats' corresponds to the natural logarithm. An additive unit.
+ * 'semitones' corresponds to addivite units worth 1/12 of an octave.
+ */
 export type PitchUnits = 'ratio' | 'cents' | 'nats' | 'semitones';
 
+/**
+ * Options that determine how a temperament is interpreted as a musical tuning.
+ */
 export type TuningOptions = {
+  /** The units pitch of intervals and mappings are measured in. */
   units?: PitchUnits;
+  /** If `true` tempering is applied to octaves as well (or whatever the first basis factor of the subgroup is). */
   temperEquaves?: boolean;
+  /** If `true` the intervals and mappings are given in terms of consecutive prime numbers instead of the basis of the subgroup. */
   primeMapping?: boolean;
+  /** Importance weighting for the basis factors of the subgroup. */
   weights?: Weights;
+  /** Invariant intervals i.e. eigenmonzos of the tuning. */
   constraints?: MonzoValue[];
 };
 
-// Parse a subgroup string like 2.15.11/7 to a list of logarithms
-export function parseJIP(token: string) {
-  return token.split('.').map(t => Math.log(new Fraction(t).valueOf()));
-}
-
 abstract class BaseTemperament {
-  algebra: typeof AlgebraElement; // Clifford Algebra
-  value: AlgebraElement; // Multivector of the Clifford Algebra
+  /** The Clifford algebra where the temperament is interpreted in. All-positive metric with integer coefficients. */
+  algebra: typeof AlgebraElement;
+  /** An element of the Clifford algebra representing the temperament. */
+  value: AlgebraElement;
 
   constructor(algebra: typeof AlgebraElement, value: AlgebraElement) {
     this.algebra = algebra;
@@ -55,7 +68,7 @@ abstract class BaseTemperament {
   abstract kernelJoin(other: BaseTemperament): BaseTemperament;
   abstract kernelMeet(other: BaseTemperament): BaseTemperament;
 
-  calculateTenneyEuclid(jip: Mapping, weights: Weights) {
+  protected calculateTenneyEuclid(jip: Mapping, weights: Weights) {
     const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
 
     const jip_ = Clifford.fromVector(jip.map((j, i) => j * weights[i]));
@@ -66,7 +79,7 @@ abstract class BaseTemperament {
     return [...projected.vector().map((p, i) => p / weights[i])];
   }
 
-  calculateCTE(jip: Mapping, weights: Weights, constraints: Monzo[]) {
+  protected calculateCTE(jip: Mapping, weights: Weights, constraints: Monzo[]) {
     const PGA = getAlgebra(this.algebra.dimensions, 'PGA');
     const one = PGA.scalar();
     const e0 = PGA.basisBlade(0); // Null blade
@@ -112,6 +125,11 @@ abstract class BaseTemperament {
     return unpoint(proj(jip_, temperament)).map((c, i) => c / weights[i]);
   }
 
+  /**
+   * Obtain the period and generator of a rank 2 temperament.
+   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
+   * @returns A pair `[period, generator]` in cents (default) or the specified units.
+   */
   periodGenerator(options?: TuningOptions): [number, number] {
     const mappingOptions = Object.assign({}, options || {});
     mappingOptions.units = 'nats';
@@ -135,10 +153,15 @@ abstract class BaseTemperament {
     return [natsToCents(period), natsToCents(generator)];
   }
 
+  /** Returns `true` if the temperament value is zero representing the trivial temperament of a single pitch only.*/
   isNil() {
     return this.value.isNil();
   }
 
+  /**
+   * Canonize the temperament in-place into wedgie form.
+   * Remove a common factor and make the lexicographically first non-zero element positive.
+   */
   canonize() {
     let firstSign = 0;
     let commonFactor = 0;
@@ -160,16 +183,28 @@ abstract class BaseTemperament {
     }
   }
 
-  // Only checks numerical equality, canonize your inputs beforehand
+  /**
+   * Check if two temperaments are the same.
+   * Only checks numerical equality, canonize your inputs beforehand.
+   * @param other Another temperament.
+   * @returns `true` if the temperament is equal to the other.
+   */
   equals(other: BaseTemperament) {
     return this.value.equals(other.value);
   }
 
+  /**
+   * The size of the temperament's subgroup.
+   */
   get dimensions() {
     return this.algebra.dimensions;
   }
 
-  // Assumes this is canonized rank-2
+  /**
+   * Obtain the number of periods per octave (or equave) and the generator in monzo form.
+   * The procedure assumes the temperament is of rank 2 and canonized.
+   * @returns A pair representing the number of periods per equave and the generator as a monzo of the temperament's subgroup.
+   */
   numPeriodsGenerator(): [number, Monzo] {
     const equaveUnit = this.algebra.basisBlade(0);
     const equaveProj = equaveUnit.dot(this.value).vector();
@@ -179,11 +214,23 @@ abstract class BaseTemperament {
     return [numPeriods, generator];
   }
 
+  /**
+   * Get the rank of the temperament i.e. the number of inpendent intervals in the tuning.
+   * @returns The rank of the temperament.
+   */
   getRank(): number {
     return this.value.grades()[0];
   }
 
-  rankPrefix(rank: number): number[] {
+  /**
+   * Get a prefix of the temperament's full wedgie that may be used to reconstruct it. Potentially lossy compression.
+   * @param rank The rank of the temperament.
+   * @returns The first few components of the temperament's wedgie that can be used to reconstruct the temperament if it's regular enough.
+   */
+  rankPrefix(rank?: number): number[] {
+    if (rank === undefined) {
+      rank = this.getRank();
+    }
     return [
       ...this.value
         .vector(rank)
@@ -191,11 +238,11 @@ abstract class BaseTemperament {
     ];
   }
 
-  getNames(): {given?: string; color?: string; wedgie: string} {
-    throw new Error('Unimplemented');
-  }
-
-  rescaleValue(value: AlgebraElement, persistence = 100, threshold = 1e-4) {
+  protected rescaleValue(
+    value: AlgebraElement,
+    persistence = 100,
+    threshold = 1e-4
+  ) {
     const grade = value.grades()[0];
     const blade = value.vector(grade);
 
@@ -235,8 +282,13 @@ abstract class BaseTemperament {
     );
   }
 
-  // JI is a slight misnomer here as we're dealing with formal primes only
-  jiMapping(generators: number[][], threshold = 1e-5) {
+  /**
+   * Calculate the change of basis mapping from primes to the generators of the temperament.
+   * @param generators Period and generators used as the new basis.
+   * @param threshold Zero threshold used during the calculation.
+   * @returns Change of basis matrix as an array of arrays of numbers.
+   */
+  basisMapping(generators: number[][], threshold = 1e-5) {
     if (generators.length !== this.getRank()) {
       throw new Error('Number of basis generators must match rank');
     }
@@ -460,10 +512,19 @@ export class FreeTemperament extends BaseTemperament {
   }
 }
 
-// Fractional just intonation subgroup represented in Geometric Algebra
+/**
+ * Temperament of a fractional just intonation subgroup represented as an element of a Clifford algebra.
+ */
 export class Temperament extends BaseTemperament {
+  /** Fractional just intonation subgroup defining what vectors of the algebra mean. */
   subgroup: Subgroup;
 
+  /**
+   * Construct a new temperament of a fractional just intonation subgroup.
+   * @param algebra Clifford algebra of with an all-positive metric and integer components.
+   * @param value Element of the clifford algebra representing the temperament.
+   * @param subgroup Fractional just intonation subgroup defining what vectors of the algebra mean.
+   */
   constructor(
     algebra: typeof AlgebraElement,
     value: AlgebraElement,
@@ -473,38 +534,62 @@ export class Temperament extends BaseTemperament {
     this.subgroup = new Subgroup(subgroup);
   }
 
-  steps(interval: MonzoValue, primeMapping = false): number {
-    const monzo = this.subgroup.resolveMonzo(interval, primeMapping);
+  /**
+   * Calculate how many steps of the rank 1 temperament represents the given interval.
+   * @param interval Rational number representing a musical interval.
+   * @param primeMapped Set to `true` if the interval is in monzo form and given in terms of consecutive prime exponents.
+   * @returns The number of steps that represents the interval.
+   */
+  steps(interval: MonzoValue, primeMapped = false): number {
+    const monzo = this.subgroup.resolveMonzo(interval, primeMapped);
     return this.value.star(this.algebra.fromVector(monzo));
   }
 
+  /**
+   * Tune a musical interval according to the temperament.
+   * @param interval Rational number representing a musical interval.
+   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
+   * Set `options.primeMapping` to `true` if the interval is in monzo form and given in terms of consecutive prime exponents.
+   * @returns The interval tuned according to the temperament in cents (default) or the specified units.
+   */
   tune(interval: MonzoValue, options?: TuningOptions): number {
-    options = options || {};
-    const primeMapping = !!options.primeMapping;
-    const monzo = this.subgroup.resolveMonzo(interval, primeMapping);
-    const mappingOptions = Object.assign({}, options || {});
-    mappingOptions.units = 'nats';
-    const result = dot(this.getMapping(mappingOptions), monzo);
-    if (options.units === 'nats') {
+    options = Object.assign({}, options);
+    const monzo = options.primeMapping
+      ? resolveMonzo(interval)
+      : this.subgroup.resolveMonzo(interval);
+    const units = options.units;
+    options.units = 'nats';
+    const result = dot(this.getMapping(options), monzo);
+    if (units === 'nats') {
       return result;
     }
-    if (options.units === 'ratio') {
+    if (units === 'ratio') {
       return Math.exp(result);
     }
-    if (options.units === 'semitones') {
+    if (units === 'semitones') {
       return natsToSemitones(result);
     }
     return natsToCents(result);
   }
 
-  // Only checks numerical equality, canonize your inputs beforehand
-  equals(other: Temperament) {
+  /**
+   * Check if two temperaments are the same and have the same subgroup.
+   * Only checks numerical equality, canonize your inputs beforehand.
+   * @param other Another temperament.
+   * @returns `true` if the temperament is equal to the other.
+   */
+  equals(other: Temperament): boolean {
     if (!this.subgroup.equals(other.subgroup)) {
       return false;
     }
     return super.equals(other);
   }
 
+  /**
+   * Obtain the mapping vector for the temperament's subgroup or for consecutive primes if `options.primeMapping` is `true`.
+   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
+   * @returns A vector mapping (formal) primes to tempered versions of their logarithms in cents (default) or the specified pitch units.
+   */
   getMapping(options?: TuningOptions): Mapping {
     options = options || {};
     const jip = this.subgroup.jip();
@@ -541,6 +626,13 @@ export class Temperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
+  /**
+   * Calculate the true val join of two temperaments.
+   * @param other Another temperament in the same subgroup.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament supported by all the vals supporting either temperament.
+   */
   valJoin(other: Temperament, persistence = 100, threshold = 1e-4) {
     const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let join = new Clifford(this.value).meetJoin(
@@ -550,10 +642,24 @@ export class Temperament extends BaseTemperament {
     join = this.rescaleValue(join, persistence, threshold);
     return new Temperament(this.algebra, join, this.subgroup);
   }
-  kernelMeet(other: Temperament) {
-    return this.valJoin(other);
+  /**
+   * Calculate the true kernel meet of two temperaments.
+   * @param other Another temperament in the same subgroup.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament tempering out only the commas tempered out by both temperaments.
+   */
+  kernelMeet(other: Temperament, persistence = 100, threshold = 1e-4) {
+    return this.valJoin(other, persistence, threshold);
   }
 
+  /**
+   * Calculate the true val meet of two temperaments.
+   * @param other Another temperament in the same subgroup.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament supported only by the vals shared by both temperaments.
+   */
   valMeet(other: Temperament, persistence = 100, threshold = 1e-4) {
     const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let meet = new Clifford(this.value).meetJoin(
@@ -563,10 +669,24 @@ export class Temperament extends BaseTemperament {
     meet = this.rescaleValue(meet, persistence, threshold);
     return new Temperament(this.algebra, meet, this.subgroup);
   }
-  kernelJoin(other: Temperament) {
-    return this.valMeet(other);
+  /**
+   * Calculate the true kernel join of two temperaments.
+   * @param other Another temperament in the same subgroup.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament tempering out commas tempered out by either temperament.
+   */
+  kernelJoin(other: Temperament, persistence = 100, threshold = 1e-4) {
+    return this.valMeet(other, persistence, threshold);
   }
 
+  /**
+   * Construct a temperament supported by all of the given vals.
+   * @param vals An array of step mappings for the subgroup's basis or strings in [Wart Notation](https://en.xen.wiki/w/Val#Shorthand_notation).
+   * In the warts the letters of the alphabet correspond to the subgroup's basis, not prime numbers.
+   * @param subgroup Fractional just intonation subgroup such as `'2.3.13/5'`.
+   * @returns A `Temperament` instance supported by all of the given vals.
+   */
   static fromVals(vals: (Val | number | string)[], subgroup: SubgroupValue) {
     const subgroup_ = new Subgroup(subgroup);
     const Clifford = getAlgebra(subgroup_.basis.length);
@@ -588,6 +708,13 @@ export class Temperament extends BaseTemperament {
     return new Temperament(Clifford, value, subgroup_);
   }
 
+  /**
+   * Construct a temperament tempering out all of the given commas.
+   * @param commas An array of small musical intervals you want to map to unison.
+   * @param subgroup Fractional just intonation subgroup. A prime subgroup is inferred from the commas if not given explicitly.
+   * @param stripCommas Strip components outside of the prime subgroup from commas given in monzo form in terms of consecutive prime exponents.
+   * @returns A `Temperament` instance mapping all of the given commas to unison.
+   */
   static fromCommas(
     commas: (Comma | FractionValue)[],
     subgroup?: SubgroupValue,
@@ -603,6 +730,10 @@ export class Temperament extends BaseTemperament {
 
     if (stripCommas === undefined) {
       stripCommas = subgroup === undefined;
+    } else if (stripCommas && !subgroup_.isPrimeSubgroup()) {
+      throw new Error(
+        'Remapping prime monzos to fractional subgroup monzos not implemented.'
+      );
     }
 
     let value = Clifford.pseudoscalar();
@@ -619,6 +750,13 @@ export class Temperament extends BaseTemperament {
     return new Temperament(Clifford, value, subgroup_);
   }
 
+  /**
+   * Recover a temperament from its rank prefix.
+   * @param rank Rank of the original temperament.
+   * @param wedgiePrefix Array of integers obtained from `Temperament.rankPrefix()`.
+   * @param subgroup Subgroup of the original temperament.
+   * @returns The original temperament if reconstruction was possible.
+   */
   static fromPrefix(
     rank: number,
     wedgiePrefix: number[],
@@ -648,15 +786,44 @@ export class Temperament extends BaseTemperament {
   }
 
   // Monkey patched in at names.ts
+  /**
+   * Retrieve a temperament from the database based on its name.
+   * @param name Community name of the temperament.
+   * @param subgroup Subgroup for narrowing down the options.
+   * @returns A `Temperament` instance with the given name.
+   */
   static fromName(
     name: string, // eslint-disable-line @typescript-eslint/no-unused-vars
     subgroup?: SubgroupValue // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Temperament {
     throw new Error('Unimplemented');
   }
+
+  /**
+   * Construct a temperament based on its name in [Color Notation](https://en.xen.wiki/w/Color_notation/Temperament_Names).
+   * @param color Color name of the temperament such as `'Sagugu & Zotrigu'`.
+   * @returns A `Temperament` instance with the given color name.
+   */
   static fromColor(
     color: string // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Temperament {
     throw new Error('Unimplemented');
   }
+
+  /**
+   * Obtain the names given to the temperament.
+   */
+  getNames(): Names {
+    throw new Error('Unimplemented');
+  }
 }
+
+/** Names of a temperament. */
+export type Names = {
+  /** A name the xenharmonic community may have given to the temperament. */
+  given?: string;
+  /** The temperament's name in Color Notation if it can be calculated automatically. */
+  color?: string;
+  /** The temperament's wedgie as a string. */
+  wedgie: string;
+};
