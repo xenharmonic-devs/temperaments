@@ -1,7 +1,13 @@
 import {describe, it, expect, test} from 'vitest';
 import {arraysEqual, Fraction, toMonzoAndResidual} from 'xen-dev-utils';
 
-import {ColorInterval, monzoToColorComma, colorComma} from '../color';
+import {
+  ColorInterval,
+  monzoToColorComma,
+  colorComma,
+  colorTemperament,
+} from '../color';
+import {Temperament} from '../temperament';
 
 const INTERVALS = {
   'wa unison': '1/1',
@@ -136,4 +142,32 @@ describe('Monzo to color comma converter', () => {
   test.each(Object.entries(COMMAS))('emits %s correctly', (token, monzo) => {
     expect(monzoToColorComma(monzo)).toBe(token);
   });
+
+  it('converts fractions in string form', () => {
+    expect(monzoToColorComma('81/80')).toBe('Gu');
+  });
+});
+
+const TEMPERAMENTS = {
+  'Ruyo & Loru': '15/14,22/21',
+  'Rubi & Lu + ya': '8/7,12/11',
+  'Rubi & Logu': '8/7,11/10',
+  'Yo & Logu + za': '10/9,11/10',
+  'Yo & Lu + za': '10/9,12/11',
+  '2-edo & Logu + za': '9/8,11/10',
+  '3-edo & Yo + zala': '32/27,10/9',
+  '1-edo & Yobi + zala': '4/3,5/4',
+  'Yo & Ruyo + ela': '10/9,15/14',
+  'Gubi & Zogu + ila': '16/15,21/20',
+};
+
+describe('Color temperament parser', () => {
+  test.each(Object.entries(TEMPERAMENTS))(
+    'parses %s correctly',
+    (token, commaList) => {
+      const parsed = colorTemperament(token);
+      const com = Temperament.fromCommas(commaList.split(','), 11);
+      expect(parsed.equals(com)).toBeTruthy();
+    }
+  );
 });

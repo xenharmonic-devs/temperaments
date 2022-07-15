@@ -529,6 +529,11 @@ function verboseToAbbreviation(token: string): [string, number] {
   return [shortToken + token, ordinal];
 }
 
+/**
+ * Convert the name of a color comma to a monzo.
+ * @param token Color name of the comma such as 'Biloru-agu'.
+ * @returns The monzo corresponding to the comma.
+ */
 export function colorComma(token: string) {
   const [abbreviation, ordinal] = verboseToAbbreviation(token);
   const segment: [number, Monzo][] = [];
@@ -560,7 +565,13 @@ export function colorComma(token: string) {
   return segment[ordinal - 1][1];
 }
 
-export function monzoToColorComma(monzo: Monzo): string {
+/**
+ * Convert a fraction or monzo to its color comma name.
+ * @param monzo Fraction or monzo to convert such as '81/80'.
+ * @returns Name of the comma.
+ */
+export function monzoToColorComma(monzo: MonzoValue): string {
+  monzo = resolveMonzo(monzo);
   if (monzo.length > PSEUDO_EDO_MAPPING.length) {
     throw new Error('Too many components to represent in color notation');
   }
@@ -684,7 +695,11 @@ export function monzoToColorComma(monzo: Monzo): string {
   );
 }
 
-// Get color name for a temperament of only one vanishing comma
+/**
+ * Get color name for a temperament of only one vanishing comma.
+ * @param temperament Temperament of co-rank 1.
+ * @returns The color name of the temperament.
+ */
 export function getSingleCommaColorName(temperament: Temperament) {
   const commish = temperament.value.dual().vector();
   const monzo: Monzo = Array(PSEUDO_EDO_MAPPING.length).fill(0);
@@ -728,7 +743,20 @@ export function getSingleCommaColorName(temperament: Temperament) {
   return name;
 }
 
-export function parseColorTemperament(name: string) {
+/**
+ * Convert color name to a `Temperament` instance.
+ * @param name Color name of the temperament.
+ * @returns The temperament corresponding to the name.
+ */
+export function colorTemperament(name: string) {
+  name = name
+    .replace(/1-edo/gi, 'Watri')
+    .replace(/2-edo/gi, 'Wa')
+    .replace(/3-edo/gi, 'Wabi')
+    .replace(/5-edo/gi, 'Sawa')
+    .replace(/7-edo/gi, 'Lawa')
+    .replace(/12-edo/gi, 'Lalawa');
+
   const commas = name.split('&').map(c => c.trim());
   if (!commas.length) {
     throw new Error('Failed to extract color commas');
@@ -756,7 +784,14 @@ export function parseColorTemperament(name: string) {
     }
   }
   limits.forEach(limit => {
-    primeIndices.add(ALL_BY_LIMIT.indexOf(limit.toLowerCase().trim()));
+    limit = limit.toLowerCase().trim().replace(/^e|i/, '');
+
+    ALL_BY_LIMIT.forEach((limitName, index) => {
+      if (limit.startsWith(limitName)) {
+        primeIndices.add(index);
+        limit = limit.slice(limitName.length);
+      }
+    });
   });
 
   const lastMonzo = colorComma(comma);

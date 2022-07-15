@@ -1,6 +1,6 @@
 import {MonzoValue, resolveMonzo} from './monzo';
 import {Temperament} from './temperament';
-import {getSingleCommaColorName, parseColorTemperament} from './color';
+import {getSingleCommaColorName, colorTemperament} from './color';
 import {Subgroup, SubgroupValue} from './subgroup';
 import {dot, Fraction, LOG_PRIMES, Monzo, monzoToFraction} from 'xen-dev-utils';
 
@@ -154,5 +154,5 @@ Temperament.fromName = function (
 };
 
 Temperament.fromColor = function (color: string) {
-  return parseColorTemperament(color);
+  return colorTemperament(color);
 };
