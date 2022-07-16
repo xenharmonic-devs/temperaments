@@ -334,19 +334,43 @@ abstract class BaseTemperament {
   }
 }
 
-// Temperament with an arbitrary basis represented in Geometric Algebra
+/**
+ * Temperament with an arbitrary basis represented as an element of a Clifford algebra.
+ */
 export class FreeTemperament extends BaseTemperament {
+  /** Natural logarithms of the basis factors. */
   jip: Mapping; // Just Intonation Point
 
-  constructor(algebra: typeof AlgebraElement, value: AlgebraElement, jip: any) {
+  /**
+   * Construct a new temperament of an arbitrary basis.
+   * @param algebra Clifford algebra of with an all-positive metric and integer components.
+   * @param value Element of the Clifford algebra representing the temperament.
+   * @param jip Natural logarithms of the basis factors.
+   */
+  constructor(
+    algebra: typeof AlgebraElement,
+    value: AlgebraElement,
+    jip: Mapping
+  ) {
     super(algebra, value);
     this.jip = jip;
   }
 
+  /**
+   * Calculate how many steps of the rank 1 temperament represents the given interval.
+   * @param interval Array of exponents of the basis factors.
+   * @returns The number of steps that represents the interval.
+   */
   steps(interval: Monzo): number {
     return this.value.star(this.algebra.fromVector(interval));
   }
 
+  /**
+   * Tune a musical interval according to the temperament.
+   * @param interval Array of exponents of the basis factors.
+   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
+   * @returns The interval tuned according to the temperament in cents (default) or the specified units.
+   */
   tune(interval: Monzo, options?: TuningOptions): number {
     const mappingOptions = Object.assign({}, options || {});
     mappingOptions.units = 'nats';
@@ -364,8 +388,13 @@ export class FreeTemperament extends BaseTemperament {
     return natsToCents(result);
   }
 
-  // Only checks numerical equality, canonize your inputs beforehand
-  equals(other: FreeTemperament) {
+  /**
+   * Check if two temperaments are the same and have the same subgroup.
+   * Only checks numerical equality, canonize your inputs beforehand.
+   * @param other Another temperament.
+   * @returns `true` if the temperament is equal to the other.
+   */
+  equals(other: FreeTemperament): boolean {
     if (this.jip.length !== other.jip.length) {
       return false;
     }
@@ -377,6 +406,11 @@ export class FreeTemperament extends BaseTemperament {
     return super.equals(other);
   }
 
+  /**
+   * Obtain the mapping vector for the temperament's basis factors.
+   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
+   * @returns A vector mapping basis factors to tempered versions of their logarithms in cents (default) or the specified pitch units.
+   */
   getMapping(options?: TuningOptions): Mapping {
     options = options || {};
 
@@ -425,6 +459,13 @@ export class FreeTemperament extends BaseTemperament {
     return mapping.map(component => natsToCents(component));
   }
 
+  /**
+   * Calculate the true val join of two temperaments.
+   * @param other Another temperament in the same basis.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament supported by all the vals supporting either temperament.
+   */
   valJoin(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
     const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let join = new Clifford(this.value).meetJoin(
@@ -434,10 +475,24 @@ export class FreeTemperament extends BaseTemperament {
     join = this.rescaleValue(join, persistence, threshold);
     return new FreeTemperament(this.algebra, join, this.jip);
   }
-  kernelMeet(other: FreeTemperament) {
-    return this.valJoin(other);
+  /**
+   * Calculate the true kernel meet of two temperaments.
+   * @param other Another temperament in the same basis.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament tempering out only the commas tempered out by both temperaments.
+   */
+  kernelMeet(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
+    return this.valJoin(other, persistence, threshold);
   }
 
+  /**
+   * Calculate the true val meet of two temperaments.
+   * @param other Another temperament in the same basis.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament supported only by the vals shared by both temperaments.
+   */
   valMeet(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
     const Clifford = getAlgebra(this.algebra.dimensions, 'float64');
     let meet = new Clifford(this.value).meetJoin(
@@ -447,10 +502,24 @@ export class FreeTemperament extends BaseTemperament {
     meet = this.rescaleValue(meet, persistence, threshold);
     return new FreeTemperament(this.algebra, meet, this.jip);
   }
-  kernelJoin(other: FreeTemperament) {
-    return this.valMeet(other);
+  /**
+   * Calculate the true kernel join of two temperaments.
+   * @param other Another temperament in the same basis.
+   * @param persistence Search range for normalizing the result.
+   * @param threshold Rounding threshold.
+   * @returns A temperament tempering out commas tempered out by either temperament.
+   */
+  kernelJoin(other: FreeTemperament, persistence = 100, threshold = 1e-4) {
+    return this.valMeet(other, persistence, threshold);
   }
 
+  /**
+   * Construct a temperament supported by all of the given vals.
+   * @param vals An array of step mappings for the basis factors or strings in [Wart Notation](https://en.xen.wiki/w/Val#Shorthand_notation).
+   * In the warts the letters of the alphabet correspond to the basis, not prime numbers.
+   * @param jip Natural logarithms of the basis factors.
+   * @returns A `FreeTemperament` instance supported by all of the given vals.
+   */
   static fromVals(vals: (Val | number | string)[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
@@ -473,6 +542,12 @@ export class FreeTemperament extends BaseTemperament {
     return new FreeTemperament(Clifford, value, jip);
   }
 
+  /**
+   * Construct a temperament tempering out all of the given commas.
+   * @param commas An array of small musical intervals you want to map to unison.
+   * @param jip Natural logarithms of the basis factors.
+   * @returns A `FreeTemperament` instance mapping all of the given commas to unison.
+   */
   static fromCommas(commas: Comma[], jip: Mapping) {
     const Clifford = getAlgebra(jip.length);
 
@@ -489,6 +564,13 @@ export class FreeTemperament extends BaseTemperament {
     return new FreeTemperament(Clifford, value, jip);
   }
 
+  /**
+   * Recover a temperament from its rank prefix.
+   * @param rank Rank of the original temperament.
+   * @param wedgiePrefix Array of integers obtained from `FreeTemperament.rankPrefix()`.
+   * @param jip Natural logarithms of the basis factors.
+   * @returns The original temperament if reconstruction was possible.
+   */
   static fromPrefix(rank: number, wedgiePrefix: number[], jip: Mapping) {
     const dims = jip.length;
     const Clifford = getAlgebra(dims, 'float64');
@@ -522,7 +604,7 @@ export class Temperament extends BaseTemperament {
   /**
    * Construct a new temperament of a fractional just intonation subgroup.
    * @param algebra Clifford algebra of with an all-positive metric and integer components.
-   * @param value Element of the clifford algebra representing the temperament.
+   * @param value Element of the Clifford algebra representing the temperament.
    * @param subgroup Fractional just intonation subgroup defining what vectors of the algebra mean.
    */
   constructor(

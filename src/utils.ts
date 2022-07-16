@@ -4,6 +4,11 @@ import Algebra, {
   linSolve,
 } from 'ts-geometric-algebra';
 
+/** Type of an an algebra.
+ * `'int32'` means all-positive metric with integer components.
+ * `'float64'` means all-positive metric with real components.
+ * `'PGA'` means positive metric with an extra zero basis blade.
+ * */
 export type AlgebraType = 'int32' | 'float64' | 'PGA';
 
 const ALGEBRA_CACHES: {
@@ -20,6 +25,12 @@ const ALGEBRA_BASE_TYPES: {[key in AlgebraType]: typeof ElementBaseType} = {
   PGA: Float64Array,
 };
 
+/**
+ * Get an algebra from the cache.
+ * @param dimensions Number of components of vectors in the base space.
+ * @param algebraType Type of the algebra.
+ * @returns Clifford or Plane-based Geometric Algebra.
+ */
 export function getAlgebra(
   dimensions: number,
   algebraType: AlgebraType = 'int32'
@@ -39,10 +50,18 @@ export function getAlgebra(
   return algebra;
 }
 
+/** Clear cached algebras. */
 export function clearCache() {
   Object.values(ALGEBRA_CACHES).forEach(cache => cache.clear());
 }
 
+/**
+ * Solve linear equations using hyper-wedges of cached algebras.
+ * @param x Target vector as an array of numbers.
+ * @param basis Array of basis vectors.
+ * @param threshold Zero threshold.
+ * @returns A vector such that when multiplied with the basis matrix results in the target vector `x`.
+ */
 export function cachedLinSolve(
   x: number[],
   basis: number[][],

@@ -1,6 +1,19 @@
 # temperaments
 Musical tunings/temperaments for Javascript
 
+## Installation ##
+```bash
+npm i
+```
+
+## Documentation
+Below are some examples. The main API documentation is hosted on the project [Github pages](https://xenharmonic-devs.github.io/temperaments).
+
+To generate documentation locally run:
+```bash
+npm run doc
+```
+
 ## Equal temperaments
 ```typescript
 import Temperament from 'temperaments';
@@ -34,7 +47,8 @@ meantone.tune('2/1', {temperEquaves: true}); // 1201.397
 
 ## POTE Mapping vector
 ```typescript
-import {Temperament, fractionToMonzo, dot} from 'temperaments';
+import {toMonzo, dot} from 'xen-dev-utils';
+import {Temperament} from 'temperaments';
 
 // Porcupine temperament from the porcupine comma
 // The subgroup 2.3.5 is automatically inferred
@@ -42,8 +56,8 @@ const porcupine = Temperament.fromCommas(['250/243']);
 
 const POTE = porcupine.getMapping();
 
-const minorThird = fractionToMonzo('6/5');
-const perfectFourth = fractionToMonzo('4/3');
+const minorThird = toMonzo('6/5');
+const perfectFourth = toMonzo('4/3');
 
 const m3Cents = dot(minorThird, POTE); // 327.901
 const P4Cents = dot(perfectFourth, POTE); // 491.851
@@ -62,7 +76,8 @@ const pinkan = Temperament.fromCommas(
   '2.3.13/5.19/5'
 );
 
-pinkan.tune('15/13'); // 248.868
+// CTE optimized
+pinkan.tune('15/13', {constraints: ['2/1']}); // 248.846
 ```
 
 ## Named temperaments

@@ -92,7 +92,7 @@ describe('Comma retriever', () => {
       '2.3.13/5.19/5'
     );
 
-    expect(pinkan.tune('15/13')).toBeCloseTo(248.868);
+    expect(pinkan.tune('15/13', {constraints: ['2/1']})).toBeCloseTo(248.846);
   });
 });
 
