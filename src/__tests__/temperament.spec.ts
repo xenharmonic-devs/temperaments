@@ -408,6 +408,49 @@ describe('Temperament', () => {
     expect(generator).toBeCloseTo(poteGenerator);
   });
 
+  it('can figure out the generators of whitewood', () => {
+    const temperament = Temperament.fromCommas(['2187/2048'], 5);
+    const generators = temperament.generators();
+
+    expect(generators[0]).toBeCloseTo(1200 / 7);
+    expect(generators[1]).toBeCloseTo(mmod(374.469, 1200 / 7));
+  });
+
+  it('can figure out the generators of kleismic', () => {
+    const temperament = Temperament.fromCommas(['15625/15552'], 7);
+    const generators = temperament.generators();
+
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(mapping[0]);
+    expect(generators[1]).toBeCloseTo(mmod(mapping[1] - mapping[2], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(-mapping[3], 1200));
+  });
+
+  it('can figure out the generators of manwe', () => {
+    const temperament = Temperament.fromCommas(['176/175', '1331/1323']);
+    const generators = temperament.generators();
+
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(mapping[0]);
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[1], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[2], 1200));
+  });
+
+  it('can figure out the generators of kalismic', () => {
+    const temperament = Temperament.fromCommas(['9801/9800']);
+    const generators = temperament.generators();
+
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(600);
+    expect(generators[0]).toBeCloseTo(temperament.tune('99/70'));
+    expect(generators[1]).toBeCloseTo(mmod(mapping[1], 600));
+    expect(generators[2]).toBeCloseTo(mmod(-mapping[2], 600));
+    expect(generators[3]).toBeCloseTo(mmod(-mapping[3], 600));
+  });
+
   it('can recover semaphore from its prefix', () => {
     const diesis = toMonzo(new Fraction(49, 48));
     const temperament = Temperament.fromCommas([diesis]);

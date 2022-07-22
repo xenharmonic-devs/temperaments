@@ -153,6 +153,49 @@ abstract class BaseTemperament {
     return [natsToCents(period), natsToCents(generator)];
   }
 
+  /**
+   * Obtain the generators of the temperament.
+   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
+   * @param modPeriod Reduce the generators by the first one interpreted as the period.
+   * @returns An array of generators `[period, generatorA, generatorB, ...]` in cents (default) or the specified units.
+   */
+  generators(options?: TuningOptions, modPeriod = true): number[] {
+    const mappingOptions = Object.assign({}, options || {});
+    mappingOptions.units = 'nats';
+    mappingOptions.primeMapping = false;
+    const mapping = this.getMapping(mappingOptions);
+
+    const basisIndicesAndDivisions = this.fractionalGenerators();
+
+    if (!basisIndicesAndDivisions.length) {
+      return [];
+    }
+    const period =
+      mapping[basisIndicesAndDivisions[0][0]] / basisIndicesAndDivisions[0][1];
+    const result = [period];
+    basisIndicesAndDivisions.slice(1).map(([index, divisions]) => {
+      const generator = mapping[index] / divisions;
+      if (modPeriod) {
+        result.push(
+          Math.min(mmod(generator, period), mmod(-generator, period))
+        );
+      } else {
+        result.push(generator);
+      }
+    });
+
+    if (options?.units === 'nats') {
+      return result;
+    }
+    if (options?.units === 'ratio') {
+      return result.map(Math.exp);
+    }
+    if (options?.units === 'semitones') {
+      return result.map(natsToSemitones);
+    }
+    return result.map(natsToCents);
+  }
+
   /** Returns `true` if the temperament value is zero representing the trivial temperament of a single pitch only.*/
   isNil() {
     return this.value.isNil();
@@ -212,6 +255,31 @@ abstract class BaseTemperament {
     const numPeriods = Math.abs(dot(generator, equaveProj));
 
     return [numPeriods, generator];
+  }
+
+  /**
+   * Obtain indices of the basis factors and their divisions that generate the full limit alongside the temperament's comma basis.
+   * @returns Array of basis indices and their divisions.
+   */
+  fractionalGenerators() {
+    let hyperwedge = this.value.dual();
+
+    const basisIndicesAndDivisions: [number, number][] = [];
+    for (let i = 0; i < this.algebra.dimensions; ++i) {
+      const multigen = this.algebra.basisBlade(i);
+      const multiwedge = hyperwedge.wedge(multigen);
+      const divisions = Math.abs(multiwedge.reduce(gcd));
+      if (divisions) {
+        basisIndicesAndDivisions.push([i, divisions]);
+        hyperwedge = multiwedge.scale(1 / divisions);
+      }
+    }
+
+    if (Math.abs(hyperwedge.ps) !== 1) {
+      throw new Error('Failed to extract generators');
+    }
+
+    return basisIndicesAndDivisions;
   }
 
   /**
@@ -297,7 +365,7 @@ abstract class BaseTemperament {
     const gens = generators.map(g => Clifford.fromVector(g));
     const commaWedge = new Clifford(this.value.dual());
 
-    const hyperWedge = wedge(...gens).wedge(commaWedge);
+    const hyperwedge = wedge(...gens).wedge(commaWedge);
 
     // Formal primes
     const primeMaps = [];
@@ -314,7 +382,7 @@ abstract class BaseTemperament {
           primeWedge = primeWedge.wedge(gens[k]);
         }
         map.push(
-          primeWedge.wedge(commaWedge).invScale(hyperWedge, threshold) * sign
+          primeWedge.wedge(commaWedge).invScale(hyperwedge, threshold) * sign
         );
         sign = -sign;
       }
