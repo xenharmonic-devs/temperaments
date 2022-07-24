@@ -30,6 +30,7 @@
   "types": "dist/src/index.d.ts",
   "devDependencies": {
     "@types/node": "^14.11.2",
+    "copyfiles":"^2.4.1",
     "gts": "^3.1.0",
     "typedoc": "^0.23.7",
     "typescript": "^4.6.4",
@@ -38,7 +39,7 @@
   "scripts": {
     "build": "npm run compile && npm run copyfiles",
     "compile": "tsc",
-    "copyfiles": "mkdir -p ./dist/resources && cp ./resources/* ./dist/resources",
+    "copyfiles": "npx copyfiles ./resources/* ./dist/",
     "lint": "gts lint",
     "clean": "gts clean",
     "fix": "gts fix",
