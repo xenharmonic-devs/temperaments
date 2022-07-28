@@ -112,6 +112,22 @@ describe('Fractional just intonation subgroup', () => {
     ).toBeTruthy();
   });
 
+  it('can break down commas when the equave is a fraction', () => {
+    const subgroup = new Subgroup('4/3.2.5');
+    const [diesis, diesisResidual] = subgroup.toMonzoAndResidual('128/125');
+    expect(diesis).toHaveLength(3);
+    expect(diesis[0]).toBe(0);
+    expect(diesis[1]).toBe(7);
+    expect(diesis[2]).toBe(-3);
+    expect(diesisResidual.equals(1)).toBeTruthy();
+
+    const [monzo, residual] = subgroup.toMonzoAndResidual('7/3');
+    expect(monzo[0]).toBe(1);
+    expect(monzo[1]).toBe(-2);
+    expect(monzo[2]).toBe(0);
+    expect(residual.equals(7)).toBeTruthy();
+  });
+
   it('throws for invalid limits', () => {
     expect(() => new Subgroup(NaN)).toThrow();
     expect(() => new Subgroup(4)).toThrow();

@@ -1,14 +1,17 @@
+import {linSolve, wedge} from 'ts-geometric-algebra';
 import {
   dot,
   Fraction,
   FractionValue,
   LOG_PRIMES,
   Monzo,
+  monzoToFraction,
   PRIMES,
   toMonzo,
+  toMonzoAndResidual,
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
-import {cachedLinSolve} from './utils';
+import {cachedLinSolve, getAlgebra} from './utils';
 import {fromWarts, patentVal, toWarts, Val} from './warts';
 
 /**
@@ -101,8 +104,22 @@ export class Subgroup {
       .reduce((a, b) => a && b);
   }
 
-  // Please note that this assumes that the basis is somewhat regular.
-  // The general solution would require doing Gauss-Jordan elimination over Fractions.
+  /**
+   * Converts the basis factors into monzos in standard prime basis.
+   * @returns An array of arrays of prime exponents.
+   */
+  basisMonzos() {
+    const basis = this.basis.map(toMonzo);
+
+    const dimensions = basis.reduce((a, b) => Math.max(a, b.length), 0);
+    basis.forEach(monzo => {
+      while (monzo.length < dimensions) {
+        monzo.push(0);
+      }
+    });
+    return basis;
+  }
+
   /**
    * Convert a fraction to a monzo in the subgroup's basis.
    * @param firstValue Fraction or the numerator of a fraction.
@@ -114,20 +131,60 @@ export class Subgroup {
     secondValue?: number
   ): [Monzo, Fraction] {
     let fraction = new Fraction(firstValue, secondValue);
-    const monzo: Monzo = [];
-    this.basis.forEach(basisFraction => {
-      let component = 0;
-      while (fraction.n % basisFraction.n === 0) {
-        fraction = fraction.div(basisFraction);
-        component++;
+
+    const basisMonzos = this.basisMonzos();
+    const dimensions = basisMonzos[0].length;
+    const [primeMonzo, residual] = toMonzoAndResidual(fraction, dimensions);
+
+    // Check if prime power subgroup
+    let simple = true;
+    const simpleIndices = [];
+    for (let i = 0; i < basisMonzos.length; ++i) {
+      let numNonzero = 0;
+      for (let j = 0; j < basisMonzos[i].length; ++j) {
+        if (basisMonzos[i][j]) {
+          if (numNonzero) {
+            simple = false;
+            break;
+          }
+          simpleIndices.push(j);
+          numNonzero++;
+        }
       }
-      while (fraction.d % basisFraction.n === 0) {
-        fraction = fraction.mul(basisFraction);
-        component--;
+      if (!simple) {
+        break;
       }
-      monzo.push(component);
+    }
+
+    if (simple) {
+      const result: Monzo = [];
+      simpleIndices.forEach((index, i) => {
+        const component = Math.floor(primeMonzo[index] / basisMonzos[i][index]);
+        result.push(component);
+        primeMonzo[index] -= component * basisMonzos[i][index];
+      });
+      return [result, residual.mul(monzoToFraction(primeMonzo))];
+    }
+
+    // Generic solution using projection and linear solving
+
+    const algebra = getAlgebra(dimensions, 'float64');
+
+    const basis = basisMonzos.map(monzo => algebra.fromVector(monzo));
+
+    const monzo = algebra.fromVector(primeMonzo.slice(0, dimensions));
+
+    const hyperwedge = wedge(...basis);
+
+    const projected = monzo.dotL(hyperwedge.inverse()).dotL(hyperwedge);
+
+    const result = linSolve(projected, basis).map(Math.floor);
+
+    result.forEach((component, index) => {
+      fraction = fraction.div(this.basis[index].pow(component));
     });
-    return [monzo, fraction];
+
+    return [result, fraction];
   }
 
   /**
