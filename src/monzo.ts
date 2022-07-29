@@ -1,13 +1,16 @@
+import {wedge} from 'ts-geometric-algebra';
 import {
   add,
   Fraction,
   FractionValue,
+  gcd,
   LOG_PRIMES,
   Monzo,
   monzoToFraction,
   sub,
   toMonzo,
 } from 'xen-dev-utils';
+import {getAlgebra} from './utils';
 
 /** Value that represents a rational number and can be normalized into a monzo. */
 export type MonzoValue = Monzo | FractionValue;
@@ -195,4 +198,93 @@ export function spell(
     noTwosMinDenominator: combine(noTwosResult.minDenominator),
     noTwosMinBenedetti: combine(noTwosResult.minBenedetti),
   };
+}
+
+/**
+ * Find a fraction that splits the given fraction assuming that the gives commas are tempered out.
+ * @param fraction Fraction to split.
+ * @param commas List of commas that should only affect the spelling, but not the pitch.
+ * @param divisions How many pieces to split into. Calculated if not known initially.
+ * @param searchBreadth Half-width of the search lattice.
+ * @returns Fraction that stacked `divisions` times equals the given fraction in the given temperament.
+ */
+export function split(
+  fraction: MonzoValue,
+  commas: MonzoValue[],
+  divisions?: number,
+  searchBreadth = 3
+) {
+  const monzo = resolveMonzo(fraction);
+  const basis = commas.map(resolveMonzo);
+
+  let dimensions = monzo.length;
+  basis.forEach(comma => {
+    dimensions = Math.max(comma.length, dimensions);
+  });
+
+  while (monzo.length < dimensions) {
+    monzo.push(0);
+  }
+
+  basis.forEach(comma => {
+    while (comma.length < dimensions) {
+      comma.push(0);
+    }
+  });
+
+  if (divisions === undefined) {
+    const algebra = getAlgebra(dimensions, 'float64');
+
+    const hyperwedge = wedge(
+      algebra.fromVector(monzo),
+      ...basis.map(comma => algebra.fromVector(comma))
+    );
+
+    divisions = Math.abs(hyperwedge.reduce(gcd));
+  }
+
+  if (!divisions) {
+    throw new Error('Divisions cannot be zero.');
+  }
+
+  let done = false;
+  let result: Monzo | undefined;
+
+  function search(accumulator: Monzo, index: number) {
+    if (index >= basis.length) {
+      if (done) {
+        return;
+      }
+      done = true;
+      for (const component of accumulator) {
+        if (component % divisions!) {
+          done = false;
+          break;
+        }
+      }
+      if (done) {
+        result = accumulator.map(component => component / divisions!);
+      }
+      return;
+    }
+
+    search(accumulator, index + 1);
+    for (let i = 0; i < 2 * searchBreadth; ++i) {
+      accumulator = add(accumulator, basis[index]);
+      search(accumulator, index + 1);
+    }
+  }
+
+  const accumulator = [...monzo];
+  for (let i = 0; i < basis.length; ++i) {
+    for (let j = 0; j < basis[i].length; ++j) {
+      accumulator[j] -= basis[i][j] * searchBreadth;
+    }
+  }
+  search(accumulator, 0);
+
+  if (result === undefined) {
+    throw new Error('Failed to find the split.');
+  }
+  return monzoToFraction(result);
 }
