@@ -599,6 +599,46 @@ describe('Temperament', () => {
     expect(owowhatsthismatic.value).toHaveLength(8);
     expect(owowhatsthismatic.tune('621/620')).toBeCloseTo(0);
   });
+
+  it('can work out the comma list from vals', () => {
+    const temperament = Temperament.fromVals([9, 12], 7);
+    const commaList = temperament.commaList();
+    expect(commaList).toHaveLength(2);
+    expect(commaList[0].equals('36/35')).toBeTruthy();
+    expect(commaList[1].equals('128/125')).toBeTruthy();
+  });
+
+  it('can work out the comma list for barton', () => {
+    const barton = Temperament.fromCommas(
+      ['2200/2197', '6656/6655'],
+      '2.5.11.13'
+    );
+    const commaList = barton.commaList();
+    expect(commaList).toHaveLength(2);
+    expect(commaList[0].equals('2200/2197')).toBeTruthy();
+    expect(commaList[1].equals('6656/6655')).toBeTruthy();
+  });
+
+  it('can work out the comma list for haumea', () => {
+    const haumea = Temperament.fromCommas(
+      ['352/351', '676/675', '847/845'],
+      '2.3.7/5.11/5.13/5'
+    );
+    const commaList = haumea.commaList();
+    expect(commaList).toHaveLength(3);
+  });
+
+  it('can work out the comma list for cata', () => {
+    const cata = Temperament.fromCommas(['325/324', '625/624'], '2.3.5.13');
+    const commaList = cata.commaList();
+    expect(commaList).toHaveLength(2);
+  });
+
+  it('can work out the comma list for jamesbond', () => {
+    const jamesbond = Temperament.fromCommas(['25/24', '81/80'], 7);
+    const commaList = jamesbond.commaList();
+    expect(commaList).toHaveLength(2);
+  });
 });
 
 describe('Free Temperament', () => {

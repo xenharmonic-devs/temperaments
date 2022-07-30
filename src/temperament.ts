@@ -4,15 +4,18 @@ import {getAlgebra} from './utils';
 import {Mapping, Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts, Val} from './warts';
 import {
+  add,
   binomial,
   dot,
   FractionValue,
   gcd,
   iteratedEuclid,
+  iterKCombinations,
   mmod,
   Monzo,
   natsToCents,
   natsToSemitones,
+  sub,
 } from 'xen-dev-utils';
 
 // Vals promoted to vectors in Geometric Algebra
@@ -399,6 +402,59 @@ abstract class BaseTemperament {
       result.push(row);
     }
     return result;
+  }
+
+  protected commaElements(): AlgebraElement[] {
+    const commaWedge = this.value.dual();
+
+    const length = commaWedge.grades()[0];
+
+    if (length === 0) {
+      return [];
+    }
+    if (length === 1) {
+      return [commaWedge];
+    }
+
+    const grade = length - 1;
+    const gradeSize = binomial(this.algebra.dimensions, grade);
+    const candidates: AlgebraElement[] = [];
+
+    const negWedge = commaWedge.neg();
+
+    let scale = 2;
+    while (scale < 1000) {
+      const normal = [];
+      while (normal.length < gradeSize) {
+        normal.push(Math.round((Math.random() - 0.5) * scale));
+      }
+      const candidate = this.algebra.fromVector(normal, grade).dotL(commaWedge);
+      const cFactor = candidate.reduce(gcd);
+      if (!cFactor) {
+        scale += 0.1;
+        continue;
+      }
+      candidate.rescale(1 / cFactor);
+
+      const neg = candidate.neg();
+      for (const other of candidates) {
+        if (candidate.equals(other) || neg.equals(other)) {
+          scale += 0.1;
+          continue;
+        }
+      }
+
+      for (const combination of iterKCombinations(candidates, length - 1)) {
+        const hyperwedge = wedge(candidate, ...combination);
+        if (hyperwedge.equals(commaWedge) || hyperwedge.equals(negWedge)) {
+          combination.push(candidate);
+          return combination;
+        }
+      }
+      candidates.push(candidate);
+      scale += 0.05;
+    }
+    throw new Error('Failed to extract commas');
   }
 }
 
@@ -828,6 +884,58 @@ export class Temperament extends BaseTemperament {
    */
   kernelJoin(other: Temperament, persistence = 100, threshold = 1e-4) {
     return this.valMeet(other, persistence, threshold);
+  }
+
+  /**
+   * Calculate a list of commas that span the kernel of the temperament.
+   * @returns Array of independent fractions that are tempered out by the temperament.
+   */
+  commaList() {
+    const monzos = this.commaElements().map(element => [...element.vector()]);
+
+    const jip = this.subgroup.jip();
+
+    function tenney(monzo: Monzo) {
+      return monzo
+        .map((component, k) => Math.abs(component) * jip[k])
+        .reduce((a, b) => a + b);
+    }
+
+    // Simplify
+    let done = false;
+    while (!done) {
+      done = true;
+      for (let i = 0; i < monzos.length; ++i) {
+        const complexity = tenney(monzos[i]);
+        for (let j = 0; j < monzos.length; ++j) {
+          if (j === i) {
+            continue;
+          }
+          const positive = add(monzos[i], monzos[j]);
+          if (tenney(positive) < complexity) {
+            monzos[i] = positive;
+            done = false;
+            break;
+          }
+          const negative = sub(monzos[i], monzos[j]);
+          if (tenney(negative) < complexity) {
+            monzos[i] = negative;
+            done = false;
+            break;
+          }
+        }
+        if (!done) {
+          break;
+        }
+      }
+    }
+
+    // Sort
+    monzos.sort((a, b) => tenney(a) - tenney(b));
+
+    return monzos
+      .map(monzo => this.subgroup.toFraction(monzo))
+      .map(comma => (comma.compare(1) > 0 ? comma : comma.inverse()));
   }
 
   /**
