@@ -589,6 +589,16 @@ describe('Temperament', () => {
     expect(residual.equals(1)).toBeTruthy();
     expect(terrain.tune(comma)).toBeCloseTo(0);
   });
+
+  it('can handle sparse fractional subgroups', () => {
+    const owowhatsthismatic = Temperament.fromCommas(
+      [[-2, 3, -1, 0, 0, 0, 0, 0, 1, 0, -1]],
+      '2.3.155/23',
+      true
+    );
+    expect(owowhatsthismatic.value).toHaveLength(8);
+    expect(owowhatsthismatic.tune('621/620')).toBeCloseTo(0);
+  });
 });
 
 describe('Free Temperament', () => {

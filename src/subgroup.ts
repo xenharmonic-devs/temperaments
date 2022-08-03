@@ -170,7 +170,6 @@ export class Subgroup {
     if (basisMonzos === undefined) {
       basisMonzos = this.basisMonzos();
     }
-    const dimensions = basisMonzos[0].length;
 
     const simpleIndices = this.simpleIndices(basisMonzos);
 
@@ -186,13 +185,47 @@ export class Subgroup {
       return result;
     }
 
+    // Strip away zero components
+    const usedIndices = new Set<number>();
+
+    basisMonzos.forEach(monzo => {
+      monzo.forEach((component, i) => {
+        if (component) {
+          usedIndices.add(i);
+        }
+      });
+    });
+    primeMonzo.forEach((component, i) => {
+      if (component) {
+        usedIndices.add(i);
+      }
+    });
+
+    const indices = [...usedIndices.values()];
+    indices.sort((a, b) => a - b);
+
+    const strippedBasis: Monzo[] = [];
+
+    basisMonzos.forEach(monzo => {
+      const stripped: Monzo = [];
+      indices.forEach(i => {
+        stripped.push(monzo[i]);
+      });
+      strippedBasis.push(stripped);
+    });
+    const stripped: Monzo = [];
+    indices.forEach(i => {
+      stripped.push(primeMonzo[i]);
+    });
+
     // Generic solution using projection and linear solving
+    const dimensions = indices.length;
 
     const algebra = getAlgebra(dimensions, 'float64');
 
-    const basis = basisMonzos.map(monzo => algebra.fromVector(monzo));
+    const basis = strippedBasis.map(monzo => algebra.fromVector(monzo));
 
-    const monzo = algebra.fromVector(primeMonzo.slice(0, dimensions));
+    const monzo = algebra.fromVector(stripped);
 
     const hyperwedge = wedge(...basis);
 
