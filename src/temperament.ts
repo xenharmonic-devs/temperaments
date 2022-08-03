@@ -862,13 +862,13 @@ export class Temperament extends BaseTemperament {
    * Construct a temperament tempering out all of the given commas.
    * @param commas An array of small musical intervals you want to map to unison.
    * @param subgroup Fractional just intonation subgroup. A prime subgroup is inferred from the commas if not given explicitly.
-   * @param stripCommas Strip components outside of the prime subgroup from commas given in monzo form in terms of consecutive prime exponents.
+   * @param primeMapping Should be set to `true` if the monzo is given in terms of prime exponents. Strips away excess components.
    * @returns A `Temperament` instance mapping all of the given commas to unison.
    */
   static fromCommas(
     commas: (Comma | FractionValue)[],
     subgroup?: SubgroupValue,
-    stripCommas?: boolean
+    primeMapping?: boolean
   ) {
     let subgroup_: Subgroup;
     if (subgroup === undefined) {
@@ -878,19 +878,15 @@ export class Temperament extends BaseTemperament {
     }
     const Clifford = getAlgebra(subgroup_.basis.length);
 
-    if (stripCommas === undefined) {
-      stripCommas = subgroup === undefined;
-    } else if (stripCommas && !subgroup_.isPrimeSubgroup()) {
-      throw new Error(
-        'Remapping prime monzos to fractional subgroup monzos not implemented.'
-      );
+    if (primeMapping === undefined) {
+      primeMapping = subgroup === undefined;
     }
 
     let value = Clifford.pseudoscalar();
     commas.forEach(comma => {
       const previousValue = value;
       value = value.vee(
-        Clifford.fromVector(subgroup_.resolveMonzo(comma, stripCommas)).dual()
+        Clifford.fromVector(subgroup_.resolveMonzo(comma, primeMapping)).dual()
       );
       if (value.isNil(0)) {
         value = previousValue;

@@ -580,6 +580,15 @@ describe('Temperament', () => {
     const twelve = Temperament.fromCommas(['81/80', '128/125', '2048/2025']);
     expect(twelve.getRank()).toBe(1);
   });
+
+  it('supports fractional subgroup commas given in a prime basis', () => {
+    const terrain = Temperament.fromCommas([[-4, 6, -6, 3]], '2.9/5.9/7', true);
+
+    const [comma, residual] =
+      terrain.subgroup.toMonzoAndResidual('250047/250000');
+    expect(residual.equals(1)).toBeTruthy();
+    expect(terrain.tune(comma)).toBeCloseTo(0);
+  });
 });
 
 describe('Free Temperament', () => {

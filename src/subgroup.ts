@@ -5,7 +5,6 @@ import {
   FractionValue,
   LOG_PRIMES,
   Monzo,
-  monzoToFraction,
   PRIMES,
   toMonzo,
   toMonzoAndResidual,
@@ -120,6 +119,28 @@ export class Subgroup {
     return basis;
   }
 
+  // Check if prime power subgroup and calculate prime indices
+  private simpleIndices(basisMonzos?: Monzo[]) {
+    if (basisMonzos === undefined) {
+      basisMonzos = this.basisMonzos();
+    }
+
+    const simpleIndices = [];
+    for (let i = 0; i < basisMonzos.length; ++i) {
+      let numNonzero = 0;
+      for (let j = 0; j < basisMonzos[i].length; ++j) {
+        if (basisMonzos[i][j]) {
+          if (numNonzero) {
+            return [];
+          }
+          simpleIndices.push(j);
+          numNonzero++;
+        }
+      }
+    }
+    return simpleIndices;
+  }
+
   /**
    * Convert a fraction to a monzo in the subgroup's basis.
    * @param firstValue Fraction or the numerator of a fraction.
@@ -134,36 +155,35 @@ export class Subgroup {
 
     const basisMonzos = this.basisMonzos();
     const dimensions = basisMonzos[0].length;
-    const [primeMonzo, residual] = toMonzoAndResidual(fraction, dimensions);
+    const primeMonzo = toMonzoAndResidual(fraction, dimensions)[0];
 
-    // Check if prime power subgroup
-    let simple = true;
-    const simpleIndices = [];
-    for (let i = 0; i < basisMonzos.length; ++i) {
-      let numNonzero = 0;
-      for (let j = 0; j < basisMonzos[i].length; ++j) {
-        if (basisMonzos[i][j]) {
-          if (numNonzero) {
-            simple = false;
-            break;
-          }
-          simpleIndices.push(j);
-          numNonzero++;
-        }
-      }
-      if (!simple) {
-        break;
-      }
+    const monzo = this.toMonzo_(primeMonzo, basisMonzos);
+
+    monzo.forEach((component, index) => {
+      fraction = fraction.div(this.basis[index].pow(component));
+    });
+
+    return [monzo, fraction];
+  }
+
+  private toMonzo_(primeMonzo: Monzo, basisMonzos?: Monzo[]): Monzo {
+    if (basisMonzos === undefined) {
+      basisMonzos = this.basisMonzos();
     }
+    const dimensions = basisMonzos[0].length;
 
-    if (simple) {
+    const simpleIndices = this.simpleIndices(basisMonzos);
+
+    if (simpleIndices.length) {
       const result: Monzo = [];
       simpleIndices.forEach((index, i) => {
-        const component = Math.floor(primeMonzo[index] / basisMonzos[i][index]);
+        const component = Math.floor(
+          primeMonzo[index] / basisMonzos![i][index]
+        );
         result.push(component);
-        primeMonzo[index] -= component * basisMonzos[i][index];
+        primeMonzo[index] -= component * basisMonzos![i][index];
       });
-      return [result, residual.mul(monzoToFraction(primeMonzo))];
+      return result;
     }
 
     // Generic solution using projection and linear solving
@@ -178,13 +198,7 @@ export class Subgroup {
 
     const projected = monzo.dotL(hyperwedge.inverse()).dotL(hyperwedge);
 
-    const result = linSolve(projected, basis).map(Math.floor);
-
-    result.forEach((component, index) => {
-      fraction = fraction.div(this.basis[index].pow(component));
-    });
-
-    return [result, fraction];
+    return linSolve(projected, basis).map(Math.floor);
   }
 
   /**
@@ -234,26 +248,8 @@ export class Subgroup {
     const basisMonzos = this.basis.map(b => toMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 
-    // Check if prime power subgroup
-    let simple = true;
-    const simpleIndices = [];
-    for (let i = 0; i < basisMonzos.length; ++i) {
-      let numNonzero = 0;
-      for (let j = 0; j < basisMonzos[i].length; ++j) {
-        if (basisMonzos[i][j]) {
-          if (numNonzero) {
-            simple = false;
-            break;
-          }
-          simpleIndices.push(j);
-          numNonzero++;
-        }
-      }
-      if (!simple) {
-        break;
-      }
-    }
-    if (simple) {
+    const simpleIndices = this.simpleIndices(basisMonzos);
+    if (simpleIndices.length) {
       const result = LOG_PRIMES.slice(0, limit);
       simpleIndices.forEach(
         (index, i) => (result[index] = mapping[i] / basisMonzos[i][index])
@@ -329,29 +325,20 @@ export class Subgroup {
     return new Subgroup(indices.map(i => PRIMES[i]));
   }
 
-  // This should be used to strip monzos after infering prime subgroup
-  /**
-   * Strip excess components from monzos.
-   * @param comma Monzo of a comma given in terms of prime exponents.
-   * @returns Monzo given in terms of the subgroup's basis.
-   */
-  strip(comma: Monzo): Monzo {
-    return this.basis.map(b => comma[PRIMES.indexOf(b.n)]);
-  }
-
   /**
    * Resolve a fraction into a monzo of this subgroup.
    * @param interval Fraction or monzo to resolve.
-   * @param strip Strip away excess components. Should be set to `true` if the monzo is given in terms of prime exponents.
+   * @param primeMapping Should be set to `true` if the monzo is given in terms of prime exponents. Strips away excess components.
    * @returns Monzo given in terms of the subgroup's basis.
    */
-  resolveMonzo(interval: MonzoValue, strip = false): Monzo {
+  resolveMonzo(interval: MonzoValue, primeMapping = false): Monzo {
     if (
       Array.isArray(interval) &&
       !(interval.length === 2 && typeof interval[0] === 'string')
     ) {
-      if (strip) {
-        return this.strip(interval as Monzo);
+      if (primeMapping) {
+        // XXX: Strips away residual
+        return this.toMonzo_(interval as Monzo);
       } else {
         return interval as Monzo;
       }
