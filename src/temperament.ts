@@ -165,16 +165,17 @@ abstract class BaseTemperament {
     mappingOptions.primeMapping = false;
     const mapping = this.getMapping(mappingOptions);
 
-    const basisIndicesAndDivisions = this.fractionalGenerators();
+    const basisMonzosAndDivisions = this.fractionalGenerators();
 
-    if (!basisIndicesAndDivisions.length) {
+    if (!basisMonzosAndDivisions.length) {
       return [];
     }
     const period =
-      mapping[basisIndicesAndDivisions[0][0]] / basisIndicesAndDivisions[0][1];
+      dot(mapping, basisMonzosAndDivisions[0][0]) /
+      basisMonzosAndDivisions[0][1];
     const result = [period];
-    basisIndicesAndDivisions.slice(1).map(([index, divisions]) => {
-      const generator = mapping[index] / divisions;
+    basisMonzosAndDivisions.slice(1).map(([monzo, divisions]) => {
+      const generator = dot(mapping, monzo) / divisions;
       if (modPeriod) {
         result.push(
           Math.min(mmod(generator, period), mmod(-generator, period))
@@ -258,28 +259,42 @@ abstract class BaseTemperament {
   }
 
   /**
-   * Obtain indices of the basis factors and their divisions that generate the full limit alongside the temperament's comma basis.
-   * @returns Array of basis indices and their divisions.
+   * Obtain basis monzos and their divisions that generate the full limit alongside the temperament's comma basis.
+   * @returns Array of basis monzos and their divisions.
    */
   fractionalGenerators() {
     let hyperwedge = this.value.dual();
 
-    const basisIndicesAndDivisions: [number, number][] = [];
+    const basisMonzosAndDivisions: [number[], number][] = [];
     for (let i = 0; i < this.algebra.dimensions; ++i) {
       const multigen = this.algebra.basisBlade(i);
       const multiwedge = hyperwedge.wedge(multigen);
+      if (multiwedge.ps) {
+        break;
+      }
       const divisions = Math.abs(multiwedge.reduce(gcd));
       if (divisions) {
-        basisIndicesAndDivisions.push([i, divisions]);
+        basisMonzosAndDivisions.push([[...multigen.vector()], divisions]);
         hyperwedge = multiwedge.scale(1 / divisions);
       }
     }
+
+    // XXX: I have no idea what I'm doing.
+    const params = [];
+    for (let i = 0; i < this.algebra.dimensions; ++i) {
+      params.push(hyperwedge.wedge(this.algebra.basisBlade(i)).ps);
+    }
+    const monzo = iteratedEuclid(params);
+    hyperwedge = hyperwedge.wedge(this.algebra.fromVector(monzo));
+    const divisions = Math.abs(hyperwedge.reduce(gcd));
+    basisMonzosAndDivisions.push([monzo, divisions]);
+    hyperwedge.rescale(1 / divisions);
 
     if (Math.abs(hyperwedge.ps) !== 1) {
       throw new Error('Failed to extract generators');
     }
 
-    return basisIndicesAndDivisions;
+    return basisMonzosAndDivisions;
   }
 
   /**

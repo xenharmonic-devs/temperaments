@@ -448,7 +448,15 @@ describe('Temperament', () => {
     expect(generators[0]).toBeCloseTo(temperament.tune('99/70'));
     expect(generators[1]).toBeCloseTo(mmod(mapping[1], 600));
     expect(generators[2]).toBeCloseTo(mmod(-mapping[2], 600));
-    expect(generators[3]).toBeCloseTo(mmod(-mapping[3], 600));
+    expect(generators[3]).toBeCloseTo(mmod(-mapping[4], 600));
+  });
+
+  it('can figure out the generators of xeimtionic', () => {
+    const temperament = Temperament.fromCommas(['245/242', '625/616']);
+    const generators = temperament.generators();
+    const periodGenerator = temperament.periodGenerator();
+
+    expect(generators[1]).toBeCloseTo(periodGenerator[1]);
   });
 
   it('can recover semaphore from its prefix', () => {
