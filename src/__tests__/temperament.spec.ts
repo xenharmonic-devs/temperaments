@@ -423,8 +423,8 @@ describe('Temperament', () => {
     const mapping = temperament.getMapping();
 
     expect(generators[0]).toBeCloseTo(mapping[0]);
-    expect(generators[1]).toBeCloseTo(mmod(mapping[1] - mapping[2], 1200));
-    expect(generators[2]).toBeCloseTo(mmod(-mapping[3], 1200));
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[3], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[1] - mapping[2], 1200));
   });
 
   it('can figure out the generators of manwe', () => {
@@ -452,11 +452,32 @@ describe('Temperament', () => {
   });
 
   it('can figure out the generators of xeimtionic', () => {
+    const temperament = Temperament.fromCommas(['625/616']);
+
+    const generators = temperament.generators();
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(1200);
+    expect(generators[1]).toBeCloseTo(mmod(mapping[1], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[3], 1200));
+  });
+
+  it('can figure out the generators of rank-2 xeimtionic', () => {
     const temperament = Temperament.fromCommas(['245/242', '625/616']);
     const generators = temperament.generators();
     const periodGenerator = temperament.periodGenerator();
 
     expect(generators[1]).toBeCloseTo(periodGenerator[1]);
+  });
+
+  it('can figure out the generators of frostmic', () => {
+    const temperament = Temperament.fromCommas(['245/242']);
+    const generators = temperament.generators();
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(1200);
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[2], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[3], 1200));
   });
 
   it('can recover semaphore from its prefix', () => {

@@ -273,7 +273,7 @@ abstract class BaseTemperament {
         break;
       }
       const divisions = Math.abs(multiwedge.reduce(gcd));
-      if (divisions) {
+      if ((i === 0 && divisions) || divisions === 1) {
         basisMonzosAndDivisions.push([[...multigen.vector()], divisions]);
         hyperwedge = multiwedge.scale(1 / divisions);
       }
