@@ -11,7 +11,7 @@ import {
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
 import {cachedLinSolve, getAlgebra} from './utils';
-import {fromWarts, patentVal, toWarts, Val} from './warts';
+import {fromWarts, isDigit, patentVal, toWarts, Val} from './warts';
 
 /**
  * Array of fractions intended as the basis / formal primes of a just intonation subgroup.
@@ -256,10 +256,44 @@ export class Subgroup {
 
   /**
    * Calculate the val corresponding to the given warts as progressive modifications to the patent val.
-   * @param divisionsOrWarts Number of divisions of the first basis factor or a number followed by letters of the alphabet corresponding to the formal primes in order.
+   * @param divisionsOrWarts Number of divisions of the first basis factor or a number followed by
+   * letters of the alphabet corresponding to the primes in order with formal primes represented by letters starting from 'q'.
    * @returns Array of the number of steps corresponding to each basis factor.
    */
   fromWarts(divisionsOrWarts: number | string) {
+    if (typeof divisionsOrWarts === 'string') {
+      let divisions = '';
+      while (isDigit(divisionsOrWarts[0])) {
+        divisions += divisionsOrWarts[0];
+        divisionsOrWarts = divisionsOrWarts.slice(1);
+      }
+      let warts = '';
+      [...divisionsOrWarts.toLowerCase()].forEach(wart => {
+        if (wart < 'q') {
+          const prime = PRIMES[wart.charCodeAt(0) - 97];
+          let i: number;
+          for (i = 0; i < this.basis.length; ++i) {
+            if (this.basis[i].equals(prime)) {
+              break;
+            }
+          }
+          if (i >= this.basis.length) {
+            throw new Error(`Prime ${prime} not in subgroup`);
+          }
+          warts += String.fromCharCode(97 + i);
+        } else {
+          const i = wart.charCodeAt(0) - 113;
+          const formalIndices: number[] = [];
+          this.basis.forEach((factor, j) => {
+            if (factor.d !== 1 || !PRIMES.includes(factor.n)) {
+              formalIndices.push(j);
+            }
+          });
+          warts += String.fromCharCode(97 + formalIndices[i]);
+        }
+      });
+      divisionsOrWarts = divisions + warts;
+    }
     return fromWarts(divisionsOrWarts, this.jip());
   }
 
@@ -269,7 +303,28 @@ export class Subgroup {
    * @returns The val as wart string such as `'17c'`.
    */
   toWarts(val: Val) {
-    return toWarts(val, this.jip());
+    let formal = toWarts(val, this.jip());
+    let divisions = '';
+    while (isDigit(formal[0])) {
+      divisions += formal[0];
+      formal = formal.slice(1);
+    }
+    const formalIndices: number[] = [];
+    this.basis.forEach((factor, j) => {
+      if (factor.d !== 1 || !PRIMES.includes(factor.n)) {
+        formalIndices.push(j);
+      }
+    });
+    let warts = '';
+    [...formal].forEach(wart => {
+      const index = wart.charCodeAt(0) - 97;
+      if (formalIndices.includes(index)) {
+        warts += String.fromCharCode(113 + formalIndices.indexOf(index));
+      } else {
+        warts += String.fromCharCode(97 + PRIMES.indexOf(this.basis[index].n));
+      }
+    });
+    return divisions + warts;
   }
 
   /**

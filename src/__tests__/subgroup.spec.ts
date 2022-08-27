@@ -39,7 +39,7 @@ describe('Fractional just intonation subgroup', () => {
 
   it('can parse warts', () => {
     const subgroup = new Subgroup('2.3.13/5');
-    const edo24 = subgroup.fromWarts('24bc');
+    const edo24 = subgroup.fromWarts('24bq');
     expect(edo24[0]).toBe(24);
     expect(edo24[1]).toBe(39);
     expect(edo24[2]).toBe(34);
@@ -48,7 +48,7 @@ describe('Fractional just intonation subgroup', () => {
   it('can convert to warts', () => {
     const subgroup = new Subgroup('2.3.13/5');
     const warts = subgroup.toWarts([24, 39, 34]);
-    expect(warts).toBe('24bc');
+    expect(warts).toBe('24bq');
   });
 
   it('can infer a prime subgroup from commas', () => {

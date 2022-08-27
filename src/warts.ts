@@ -10,7 +10,7 @@ export type JipOrLimit = Jip | number;
 
 const DIGIT_PATTERN = new RegExp('\\d');
 
-function isDigit(character: string) {
+export function isDigit(character: string) {
   return DIGIT_PATTERN.test(character);
 }
 
