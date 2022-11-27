@@ -3,7 +3,7 @@ Musical tunings/temperaments for Javascript
 
 ## Installation ##
 ```bash
-npm i
+npm i temperaments
 ```
 
 ## Documentation
