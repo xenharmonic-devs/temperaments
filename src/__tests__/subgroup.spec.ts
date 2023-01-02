@@ -1,6 +1,12 @@
 import {describe, it, expect} from 'vitest';
 import {Subgroup} from '../subgroup';
-import {arraysEqual, Fraction} from 'xen-dev-utils';
+import {
+  arraysEqual,
+  centsToNats,
+  Fraction,
+  natsToCents,
+  PRIME_CENTS,
+} from 'xen-dev-utils';
 
 describe('Fractional just intonation subgroup', () => {
   it('can be constructed from a string', () => {
@@ -137,5 +143,16 @@ describe('Fractional just intonation subgroup', () => {
   it('throws for invalid fractions', () => {
     expect(() => new Subgroup('1.2.3')).toThrow();
     expect(() => new Subgroup('2.-3')).toThrow();
+  });
+
+  it('can convert mappings from fractional basis to primes', () => {
+    const subgroup = new Subgroup('2.3.13/5');
+    const original = [1200, 1901, 1654].map(centsToNats);
+    const mapping = subgroup.toPrimeMapping(original).map(natsToCents);
+    expect(mapping[0]).toBeCloseTo(1200);
+    expect(mapping[1]).toBeCloseTo(1901);
+    expect(mapping[3]).toBeCloseTo(PRIME_CENTS[3]);
+    expect(mapping[4]).toBeCloseTo(PRIME_CENTS[4]);
+    expect(mapping[5] - mapping[2]).toBeCloseTo(1654);
   });
 });
