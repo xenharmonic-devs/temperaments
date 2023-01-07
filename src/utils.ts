@@ -1,8 +1,4 @@
-import Algebra, {
-  AlgebraElement,
-  ElementBaseType,
-  linSolve,
-} from 'ts-geometric-algebra';
+import Algebra, {AlgebraElement, ElementBaseType} from 'ts-geometric-algebra';
 
 /** Type of an an algebra.
  * `'int32'` means all-positive metric with integer components.
@@ -53,24 +49,4 @@ export function getAlgebra(
 /** Clear cached algebras. */
 export function clearCache() {
   Object.values(ALGEBRA_CACHES).forEach(cache => cache.clear());
-}
-
-/**
- * Solve linear equations using hyper-wedges of cached algebras.
- * @param x Target vector as an array of numbers.
- * @param basis Array of basis vectors.
- * @param threshold Zero threshold.
- * @returns A vector such that when multiplied with the basis matrix results in the target vector `x`.
- */
-export function cachedLinSolve(
-  x: number[],
-  basis: number[][],
-  threshold = 1e-5
-) {
-  const algebra = getAlgebra(x.length, 'float64');
-  return linSolve(
-    algebra.fromVector(x),
-    basis.map(b => algebra!.fromVector(b)),
-    threshold
-  );
 }
