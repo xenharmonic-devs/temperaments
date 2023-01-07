@@ -8,9 +8,18 @@ import {
   PRIMES,
   toMonzo,
   toMonzoAndResidual,
+  valueToCents,
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
 import {fromWarts, isDigit, patentVal, toWarts, Val} from './warts';
+
+/** Units of musical pitch.
+ * 'ratio' means multiplicative units.
+ * 'cents' corresponds to addive units worth 1/1200 of an octave.
+ * 'nats' corresponds to the natural logarithm. An additive unit.
+ * 'semitones' corresponds to addivite units worth 1/12 of an octave.
+ */
+export type PitchUnits = 'ratio' | 'cents' | 'nats' | 'semitones';
 
 /**
  * Array of fractions intended as the basis / formal primes of a just intonation subgroup.
@@ -84,8 +93,16 @@ export class Subgroup {
    * Just intonation point of the subgroup.
    * @returns Array of natural logarithms of the basis factors.
    */
-  jip(): Mapping {
-    return this.basis.map(b => Math.log(b.valueOf()));
+  jip(units: PitchUnits = 'cents'): Mapping {
+    if (units === 'ratio') {
+      return this.basis.map(b => b.valueOf());
+    } else if (units === 'nats') {
+      return this.basis.map(b => Math.log(b.valueOf()));
+    } else if (units === 'semitones') {
+      return this.basis.map(b => valueToCents(b.valueOf()) / 100.0);
+    } else {
+      return this.basis.map(b => valueToCents(b.valueOf()));
+    }
   }
 
   /**
@@ -248,7 +265,7 @@ export class Subgroup {
    * @returns Array of the number of steps corresponding to each basis factor.
    */
   patentVal(divisions: number) {
-    return patentVal(divisions, this.jip());
+    return patentVal(divisions, this.jip('nats'));
   }
 
   /**
@@ -291,7 +308,7 @@ export class Subgroup {
       });
       divisionsOrWarts = divisions + warts;
     }
-    return fromWarts(divisionsOrWarts, this.jip());
+    return fromWarts(divisionsOrWarts, this.jip('nats'));
   }
 
   /**
@@ -300,7 +317,7 @@ export class Subgroup {
    * @returns The val as wart string such as `'17c'`.
    */
   toWarts(val: Val) {
-    let formal = toWarts(val, this.jip());
+    let formal = toWarts(val, this.jip('nats'));
     let divisions = '';
     while (isDigit(formal[0])) {
       divisions += formal[0];

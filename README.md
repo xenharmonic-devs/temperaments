@@ -99,6 +99,17 @@ import {Temperament, namedComma, colorComma} from 'temperaments';
 Temperament.fromCommas([namedComma('starling comma'), colorComma('Loru')]);
 ```
 
+## Large subgroups
+`Temperament` instances get computationally expensive beyond subgroups larger than ~8. If you just need the TE mapping you can get it through optimized numeric methods.
+```typescript
+import {tenneyVals, Subgroup, vanishCommas} from 'temperaments';
+
+const magicMapping = tenneyVals([19, 22], new Subgroup(5));
+
+// Not an exact TE mapping, but pretty close.
+const miracleMapping = vanishCommas(["225/224", "1029/1024"]);
+```
+
 ## Gotchas
 
 Subgroup needs to be explicit if the commas do not involve all of the primes in the limit.
