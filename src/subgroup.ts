@@ -1,5 +1,4 @@
-import {lusolve} from 'mathjs';
-import {linSolve, wedge} from 'ts-geometric-algebra';
+import {lusolve, transpose} from 'mathjs';
 import {
   dot,
   Fraction,
@@ -11,7 +10,6 @@ import {
   toMonzoAndResidual,
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
-import {getAlgebra} from './utils';
 import {fromWarts, isDigit, patentVal, toWarts, Val} from './warts';
 
 /**
@@ -142,6 +140,43 @@ export class Subgroup {
     return simpleIndices;
   }
 
+  private expandBasis(basisMonzos?: Monzo[], limit?: number) {
+    if (basisMonzos === undefined) {
+      basisMonzos = this.basisMonzos();
+    } else {
+      basisMonzos = [...basisMonzos];
+    }
+    if (limit === undefined) {
+      limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
+    }
+
+    const missing = new Set<number>();
+    for (let i = 0; i < limit; ++i) {
+      missing.add(i);
+    }
+    basisMonzos.forEach(monzo => {
+      monzo.forEach((component, j) => {
+        if (Math.abs(component) > 0) {
+          missing.delete(j);
+        }
+      });
+      while (monzo.length < limit!) {
+        monzo.push(0);
+      }
+    });
+    for (const index of missing) {
+      const extraBasis = Array(limit).fill(0);
+      extraBasis[index] = 1;
+      basisMonzos.push(extraBasis);
+    }
+    while (basisMonzos.length < limit) {
+      const extraBasis = Array(limit).fill(0);
+      extraBasis[basisMonzos.length] = 1;
+      basisMonzos.push(extraBasis);
+    }
+    return basisMonzos;
+  }
+
   /**
    * Convert a fraction to a monzo in the subgroup's basis.
    * @param firstValue Fraction or the numerator of a fraction.
@@ -186,53 +221,14 @@ export class Subgroup {
       return result;
     }
 
-    // Strip away zero components
-    const usedIndices = new Set<number>();
+    basisMonzos = this.expandBasis(basisMonzos);
 
-    basisMonzos.forEach(monzo => {
-      monzo.forEach((component, i) => {
-        if (component) {
-          usedIndices.add(i);
-        }
-      });
-    });
-    primeMonzo.forEach((component, i) => {
-      if (component) {
-        usedIndices.add(i);
-      }
-    });
-
-    const indices = [...usedIndices.values()];
-    indices.sort((a, b) => a - b);
-
-    const strippedBasis: Monzo[] = [];
-
-    basisMonzos.forEach(monzo => {
-      const stripped: Monzo = [];
-      indices.forEach(i => {
-        stripped.push(monzo[i]);
-      });
-      strippedBasis.push(stripped);
-    });
-    const stripped: Monzo = [];
-    indices.forEach(i => {
-      stripped.push(primeMonzo[i]);
-    });
-
-    // Generic solution using projection and linear solving
-    const dimensions = indices.length;
-
-    const algebra = getAlgebra(dimensions, 'float64');
-
-    const basis = strippedBasis.map(monzo => algebra.fromVector(monzo));
-
-    const monzo = algebra.fromVector(stripped);
-
-    const hyperwedge = wedge(...basis);
-
-    const projected = monzo.dotL(hyperwedge.inverse()).dotL(hyperwedge);
-
-    return linSolve(projected, basis).map(Math.floor);
+    return lusolve(
+      transpose(basisMonzos),
+      primeMonzo.slice(0, basisMonzos.length)
+    )
+      .flat()
+      .slice(0, this.basis.length) as Monzo;
   }
 
   /**
@@ -334,7 +330,7 @@ export class Subgroup {
    * @returns The mapping given in terms of consecutive primes.
    */
   toPrimeMapping(mapping: Mapping): Mapping {
-    const basisMonzos = this.basis.map(b => toMonzo(b));
+    let basisMonzos = this.basis.map(b => toMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 
     const simpleIndices = this.simpleIndices(basisMonzos);
@@ -347,25 +343,8 @@ export class Subgroup {
     }
 
     // Calculate the full matrix and solve BasisMatrix * result = mapping
-    const missing = new Set<number>();
-    for (let i = 0; i < limit; ++i) {
-      missing.add(i);
-    }
-    basisMonzos.forEach(monzo => {
-      monzo.forEach((component, j) => {
-        if (component > 0) {
-          missing.delete(j);
-        }
-      });
-      while (monzo.length < limit) {
-        monzo.push(0);
-      }
-    });
-    for (const index of missing) {
-      const extraBasis = Array(limit).fill(0);
-      extraBasis[index] = 1;
-      basisMonzos.push(extraBasis);
-    }
+    basisMonzos = this.expandBasis(basisMonzos, limit);
+
     const mapping_ = [...mapping];
     while (mapping_.length < limit) {
       mapping_.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
