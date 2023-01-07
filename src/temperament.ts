@@ -1,7 +1,7 @@
 import {MonzoValue, resolveMonzo} from './monzo';
 import {AlgebraElement, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
-import {Mapping, Subgroup, SubgroupValue} from './subgroup';
+import {Mapping, PitchUnits, Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts, Val} from './warts';
 import {
   binomial,
@@ -25,14 +25,6 @@ export type Comma = number[];
 // Temperaments are stored as integers; Applied as needed.
 /** Importance weighting for the basis factors of a subgroup. */
 export type Weights = number[];
-
-/** Units of musical pitch.
- * 'ratio' means multiplicative units.
- * 'cents' corresponds to addive units worth 1/1200 of an octave.
- * 'nats' corresponds to the natural logarithm. An additive unit.
- * 'semitones' corresponds to addivite units worth 1/12 of an octave.
- */
-export type PitchUnits = 'ratio' | 'cents' | 'nats' | 'semitones';
 
 /**
  * Options that determine how a temperament is interpreted as a musical tuning.
@@ -757,7 +749,7 @@ export class Temperament extends BaseTemperament {
    */
   getMapping(options?: TuningOptions): Mapping {
     options = options || {};
-    const jip = this.subgroup.jip();
+    const jip = this.subgroup.jip('nats');
     const weights = options.weights || jip.map(j => 1 / j);
 
     const constraints = (options.constraints || []).map(constraint =>

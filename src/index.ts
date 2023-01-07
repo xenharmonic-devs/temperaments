@@ -5,6 +5,7 @@ export * from './subgroup';
 export * from './temperament';
 export * from './utils';
 export * from './warts';
+export * from './optimization';
 
 import {dot, LOG_PRIMES} from 'xen-dev-utils';
 import {MonzoValue, resolveMonzo} from './monzo';
