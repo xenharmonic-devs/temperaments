@@ -1,3 +1,4 @@
+import {lusolve} from 'mathjs';
 import {linSolve, wedge} from 'ts-geometric-algebra';
 import {
   dot,
@@ -10,7 +11,7 @@ import {
   toMonzoAndResidual,
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
-import {cachedLinSolve, getAlgebra} from './utils';
+import {getAlgebra} from './utils';
 import {fromWarts, isDigit, patentVal, toWarts, Val} from './warts';
 
 /**
@@ -369,15 +370,7 @@ export class Subgroup {
     while (mapping_.length < limit) {
       mapping_.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
     }
-    const transposed = [];
-    for (let i = 0; i < limit; ++i) {
-      const row = [];
-      for (let j = 0; j < limit; ++j) {
-        row.push(basisMonzos[j][i]);
-      }
-      transposed.push(row);
-    }
-    return cachedLinSolve(mapping_, transposed);
+    return lusolve(basisMonzos, mapping_).flat() as Mapping;
   }
 
   /**
