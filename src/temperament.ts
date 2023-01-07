@@ -769,7 +769,7 @@ export class Temperament extends BaseTemperament {
       mapping = mapping.map(component => component * purifier);
     }
     if (options.primeMapping) {
-      mapping = this.subgroup.toPrimeMapping(mapping);
+      mapping = this.subgroup.toPrimeMapping(mapping, 'nats');
     }
     if (options.units === 'nats') {
       return mapping;

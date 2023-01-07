@@ -1,11 +1,15 @@
 import {lusolve, transpose} from 'mathjs';
 import {
+  centsToNats,
   dot,
   Fraction,
   FractionValue,
   LOG_PRIMES,
   Monzo,
+  natsToCents,
+  natsToSemitones,
   PRIMES,
+  semitonesToNats,
   toMonzo,
   toMonzoAndResidual,
   valueToCents,
@@ -346,27 +350,43 @@ export class Subgroup {
    * @param mapping Mapping given in terms of the formal primes of the subgroup.
    * @returns The mapping given in terms of consecutive primes.
    */
-  toPrimeMapping(mapping: Mapping): Mapping {
+  toPrimeMapping(mapping: Mapping, units: PitchUnits = 'cents'): Mapping {
+    if (units === 'ratio') {
+      mapping = mapping.map(Math.log);
+    } else if (units === 'semitones') {
+      mapping = mapping.map(semitonesToNats);
+    } else if (units === 'cents') {
+      mapping = mapping.map(centsToNats);
+    }
     let basisMonzos = this.basis.map(b => toMonzo(b));
     const limit = basisMonzos.reduce((a, b) => Math.max(a, b.length), 0);
 
+    let result: Mapping;
+
     const simpleIndices = this.simpleIndices(basisMonzos);
     if (simpleIndices.length) {
-      const result = LOG_PRIMES.slice(0, limit);
+      result = LOG_PRIMES.slice(0, limit);
       simpleIndices.forEach(
         (index, i) => (result[index] = mapping[i] / basisMonzos[i][index])
       );
-      return result;
-    }
+    } else {
+      // Calculate the full matrix and solve BasisMatrix * result = mapping
+      basisMonzos = this.expandBasis(basisMonzos, limit);
 
-    // Calculate the full matrix and solve BasisMatrix * result = mapping
-    basisMonzos = this.expandBasis(basisMonzos, limit);
-
-    const mapping_ = [...mapping];
-    while (mapping_.length < limit) {
-      mapping_.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
+      const mapping_ = [...mapping];
+      while (mapping_.length < limit) {
+        mapping_.push(dot(basisMonzos[mapping_.length], LOG_PRIMES));
+      }
+      result = lusolve(basisMonzos, mapping_).flat() as Mapping;
     }
-    return lusolve(basisMonzos, mapping_).flat() as Mapping;
+    if (units === 'ratio') {
+      return result.map(Math.exp);
+    } else if (units === 'semitones') {
+      return result.map(natsToSemitones);
+    } else if (units === 'cents') {
+      return result.map(natsToCents);
+    }
+    return result;
   }
 
   /**
