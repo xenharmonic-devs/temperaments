@@ -581,10 +581,9 @@ describe('Temperament', () => {
   it('can val-meet temperaments', () => {
     const meantone = Temperament.fromVals([12, 19], 7);
     const flattone = Temperament.fromCommas(['81/80', '525/512']);
-    const nineteen = meantone.valMeet(flattone);
+    const nineteen = meantone.valMeet(flattone).canonize();
 
     const expected = Temperament.fromVals([19], 7);
-    nineteen.canonize();
     expected.canonize();
     expect(nineteen.equals(expected)).toBeTruthy();
   });

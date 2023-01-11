@@ -209,7 +209,7 @@ abstract class BaseTemperament {
       }
     }
     if (!commonFactor) {
-      return;
+      return this;
     }
     for (let i = 0; i < this.value.length; ++i) {
       this.value[i] *= firstSign / commonFactor;
@@ -217,6 +217,7 @@ abstract class BaseTemperament {
         this.value[i] = 0;
       }
     }
+    return this;
   }
 
   /**
