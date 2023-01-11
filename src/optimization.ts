@@ -1,8 +1,12 @@
 import {
+  applyWeights,
   centsToNats,
+  decumulate,
   dot,
   natsToCents,
   natsToSemitones,
+  norm,
+  scale,
   semitonesToNats,
 } from 'xen-dev-utils';
 import {Subgroup, Mapping, PitchUnits} from './subgroup';
@@ -10,24 +14,6 @@ import {Comma, Weights} from './temperament';
 import {fromWarts, Val} from './warts';
 import {multiply, pinv} from 'mathjs';
 import {MonzoValue, resolveMonzo} from './monzo';
-
-function norm(monzo: Comma) {
-  let total = 0;
-  monzo.forEach(component => {
-    total += component * component;
-  });
-  return Math.sqrt(total);
-}
-
-function scalarMul(scalar: number, monzo: Comma) {
-  return monzo.map(component => scalar * component);
-}
-
-function subInPlace(a: Comma, b: Comma) {
-  for (let i = 0; i < a.length; ++i) {
-    a[i] -= b[i];
-  }
-}
 
 /**
  * Adjust mapping until specified commas vanish.
@@ -78,15 +64,15 @@ export function vanishCommas(
 
   const normalizedCommas = commas_
     .map(comma => comma.map((c, i) => c / weights![i]))
-    .map(comma => scalarMul(1 / norm(comma), comma));
+    .map(comma => scale(comma, 1 / norm(comma)));
 
   for (let i = 0; i < numberOfIterations; ++i) {
     for (const comma of normalizedCommas) {
-      const delta = scalarMul(dot(mapping, comma), comma);
+      const delta = scale(comma, dot(mapping, comma));
       if (!temperEquaves) {
         delta[0] = 0;
       }
-      subInPlace(mapping, delta);
+      decumulate(mapping, delta);
     }
   }
 
@@ -141,8 +127,8 @@ export function tenneyVals(
     return val;
   });
 
-  vals_ = vals_.map(val => val.map((v, i) => v * weights![i]));
-  jip = jip.map((j, i) => j * weights![i]);
+  vals_ = vals_.map(val => applyWeights(val, weights!));
+  jip = applyWeights(jip, weights!);
 
   const mapping = multiply(jip, multiply(pinv(vals_), vals_)).map(
     (m, i) => m / weights![i]
