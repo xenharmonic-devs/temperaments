@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {arraysEqual} from 'xen-dev-utils';
 
-import {fromWarts, toWarts} from '../warts';
+import {fromWarts, toWarts, wartVariants} from '../warts';
 
 describe('Val to wart converter', () => {
   it('converts <12 19 28]', () => {
@@ -47,5 +47,25 @@ describe('Wart to val converter', () => {
   });
   it('converts 12ccc', () => {
     expect(arraysEqual(fromWarts('12ccc', 5), [12, 19, 26])).toBeTruthy();
+  });
+});
+
+describe('Variant iterator', () => {
+  it('iterates over all close variants of 17edo', () => {
+    const variants = [...wartVariants(fromWarts(17, 5), 1)];
+    const expected = [
+      [17, 26, 38],
+      [17, 26, 39],
+      [17, 26, 40],
+      [17, 27, 38],
+      [17, 27, 39],
+      [17, 27, 40],
+      [17, 28, 38],
+      [17, 28, 39],
+      [17, 28, 40],
+    ];
+    for (let i = 0; i < expected.length; ++i) {
+      expect(arraysEqual(variants[i], expected[i])).toBeTruthy();
+    }
   });
 });

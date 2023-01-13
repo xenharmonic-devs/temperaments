@@ -2,13 +2,14 @@ import {MonzoValue, resolveMonzo} from './monzo';
 import {AlgebraElement, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
 import {Mapping, PitchUnits, Subgroup, SubgroupValue} from './subgroup';
-import {fromWarts, Val} from './warts';
+import {fromWarts, Val, wartVariants} from './warts';
 import {
   binomial,
   dot,
   FractionValue,
   gcd,
   iteratedEuclid,
+  iterKCombinations,
   mmod,
   Monzo,
   natsToCents,
@@ -53,6 +54,7 @@ abstract class BaseTemperament {
     this.value = value;
   }
 
+  abstract getJip(units: PitchUnits): Mapping;
   abstract getMapping(options?: TuningOptions): Mapping;
 
   abstract valJoin(other: BaseTemperament): BaseTemperament;
@@ -408,6 +410,61 @@ abstract class BaseTemperament {
     }
     return result;
   }
+
+  /**
+   * Factorize the temperament into vals.
+   * @param maxDivisions Maximum divisions of the equave to consider.
+   * @param wartRadius Maximum deviations from closest tunings to consider.
+   * @param patent Use patent vals as the basis of the search. Uses approximations to the TE mapping otherwise.
+   * @returns An array of vals that recreates the original temperament when passed to `.fromVals`.
+   * @throws An error if the search space doesn't contain the factors.
+   */
+  valFactorize(maxDivisions = 99, wartRadius = 0, patent = true) {
+    let mapping: Mapping;
+    if (patent) {
+      mapping = this.getJip('nats');
+    } else {
+      mapping = this.getMapping({units: 'nats', temperEquaves: true});
+    }
+
+    const rank = this.getRank();
+    const normalizedMapping = mapping.map(m => m / mapping[0]);
+    const candidates: AlgebraElement[] = [];
+
+    const pushAndWedge = (candidate: AlgebraElement) => {
+      if (this.value.wedge(candidate).isNil()) {
+        for (const existing of iterKCombinations(candidates, rank - 1)) {
+          const hyperwedge = existing
+            .reduce((a, b) => wedge(a, b))
+            .wedge(candidate);
+          if (
+            hyperwedge.equals(this.value) ||
+            hyperwedge.equals(this.value.neg())
+          ) {
+            existing.push(candidate);
+            return existing;
+          }
+        }
+        candidates.push(candidate);
+      }
+      return null;
+    };
+
+    for (let divisions = 2; divisions <= maxDivisions; ++divisions) {
+      const base = normalizedMapping.map(m => Math.round(m * divisions));
+      for (const variant of wartVariants(base, wartRadius)) {
+        if (variant.reduce(gcd) !== 1) {
+          continue;
+        }
+        const candidate = this.algebra.fromVector(variant);
+        const solution = pushAndWedge(candidate);
+        if (solution !== null) {
+          return solution.map(val => [...val.vector()]);
+        }
+      }
+    }
+    throw new Error('Val factorization not found within the search space');
+  }
 }
 
 /**
@@ -430,6 +487,22 @@ export class FreeTemperament extends BaseTemperament {
   ) {
     super(algebra, value);
     this.jip = jip;
+  }
+
+  /**
+   * Just intonation point.
+   * @param units: Units to measure the basis factors in.
+   * @returns Array of logarithms of the basis factors or the factors themselves if 'ratio' was specified.
+   */
+  getJip(units: PitchUnits = 'cents') {
+    if (units === 'cents') {
+      return this.jip.map(natsToCents);
+    } else if (units === 'semitones') {
+      return this.jip.map(natsToSemitones);
+    } else if (units === 'ratio') {
+      return this.jip.map(Math.exp);
+    }
+    return [...this.jip];
   }
 
   /**
@@ -690,6 +763,15 @@ export class Temperament extends BaseTemperament {
   ) {
     super(algebra, value);
     this.subgroup = new Subgroup(subgroup);
+  }
+
+  /**
+   * Just intonation point of the subgroup.
+   * @param units: Units to measure the basis factors in.
+   * @returns Array of logarithms of the basis factors or the factors themselves if 'ratio' was specified.
+   */
+  getJip(units: PitchUnits = 'cents') {
+    return this.subgroup.jip(units);
   }
 
   /**

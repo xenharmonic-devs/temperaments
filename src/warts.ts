@@ -138,3 +138,23 @@ export function toWarts(val: Val, jipOrLimit?: JipOrLimit): string {
   }
   return result;
 }
+
+/**
+ * Iterate over close variants of a val.
+ * @param val Base val to iterate around.
+ * @param radius Maximum deviation in non-equave components.
+ */
+export function* wartVariants(val: Val, radius: number): Generator<Val> {
+  function* vary(base: Val, index: number): Generator<Val> {
+    if (index >= base.length) {
+      yield base;
+    } else {
+      for (let i = -radius; i <= radius; ++i) {
+        const newBase = [...base];
+        newBase[index] += i;
+        yield* vary(newBase, index + 1);
+      }
+    }
+  }
+  yield* vary(val, 1);
+}

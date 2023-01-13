@@ -95,7 +95,8 @@ export class Subgroup {
 
   /**
    * Just intonation point of the subgroup.
-   * @returns Array of natural logarithms of the basis factors.
+   * @param units: Units to measure the basis factors in.
+   * @returns Array of logarithms of the basis factors or the factors themselves if 'ratio' was specified.
    */
   jip(units: PitchUnits = 'cents'): Mapping {
     if (units === 'ratio') {
