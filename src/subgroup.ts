@@ -233,9 +233,8 @@ export class Subgroup {
     if (simpleIndices.length) {
       const result: Monzo = [];
       simpleIndices.forEach((index, i) => {
-        const component = Math.floor(
-          primeMonzo[index] / basisMonzos![i][index]
-        );
+        let component = index < primeMonzo.length ? primeMonzo[index] : 0;
+        component = Math.floor(component / basisMonzos![i][index]);
         result.push(component);
         primeMonzo[index] -= component * basisMonzos![i][index];
       });
@@ -244,10 +243,17 @@ export class Subgroup {
 
     basisMonzos = this.expandBasis(basisMonzos);
 
-    return lusolve(
-      transpose(basisMonzos),
-      primeMonzo.slice(0, basisMonzos.length)
-    )
+    if (primeMonzo.length > basisMonzos.length) {
+      primeMonzo = primeMonzo.slice(0, basisMonzos.length);
+    }
+    if (primeMonzo.length < basisMonzos.length) {
+      primeMonzo = [...primeMonzo];
+      while (primeMonzo.length < basisMonzos.length) {
+        primeMonzo.push(0);
+      }
+    }
+
+    return lusolve(transpose(basisMonzos), primeMonzo)
       .flat()
       .slice(0, this.basis.length) as Monzo;
   }

@@ -618,6 +618,19 @@ describe('Temperament', () => {
     expect(terrain.tune(comma)).toBeCloseTo(0);
   });
 
+  it('can construct tobago temperament', () => {
+    const subgroup = new Subgroup('2.3.11.13/5');
+    const commas = [
+      [-1, 5, 0, 0, -2],
+      [2, -3, -2, 0, 0, 2],
+    ];
+    const tobago = Temperament.fromCommas(commas, subgroup, true);
+
+    for (const comma of commas) {
+      expect(tobago.tune(comma, {primeMapping: true})).toBeCloseTo(0);
+    }
+  });
+
   it('can handle sparse fractional subgroups', () => {
     const owowhatsthismatic = Temperament.fromCommas(
       [[-2, 3, -1, 0, 0, 0, 0, 0, 1, 0, -1]],
