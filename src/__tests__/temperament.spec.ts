@@ -640,6 +640,56 @@ describe('Temperament', () => {
     expect(owowhatsthismatic.value).toHaveLength(8);
     expect(owowhatsthismatic.tune('621/620')).toBeCloseTo(0);
   });
+
+  it('can factorize meantone into vals', () => {
+    const meantone = Temperament.fromCommas(['81/80']);
+    const factors = meantone.valFactorize();
+    expect(factors).toHaveLength(2);
+    expect(arraysEqual(factors[0], [5, 8, 12])).toBeTruthy();
+    expect(arraysEqual(factors[1], [7, 11, 16])).toBeTruthy();
+  });
+
+  it('can factorize barton into vals', () => {
+    const barton = Temperament.fromCommas(
+      ['2200/2197', '6656/6655'],
+      '2.5.11.13'
+    );
+    const factors = barton.valFactorize();
+    expect(factors).toHaveLength(2);
+    expect(arraysEqual(factors[0], [11, 26, 38, 41])).toBeTruthy();
+    expect(arraysEqual(factors[1], [13, 30, 45, 48])).toBeTruthy();
+  });
+
+  it('can factorize haumea into vals', () => {
+    const haumea = Temperament.fromCommas(
+      ['352/351', '676/675', '847/845'],
+      '2.3.7/5.11/5.13/5'
+    );
+    const factors = haumea.valFactorize();
+    expect(factors).toHaveLength(2);
+    expect(arraysEqual(factors[0], [5, 8, 2, 6, 7])).toBeTruthy();
+    expect(arraysEqual(factors[1], [24, 38, 12, 27, 33])).toBeTruthy();
+  });
+
+  it('can factorize jamesbond into vals', () => {
+    const jamesbond = Temperament.fromCommas(['25/24', '81/80'], 7);
+    const factors = jamesbond.valFactorize(99, 1);
+    expect(factors).toHaveLength(2);
+    expect(arraysEqual(factors[0], [7, 11, 16, 19])).toBeTruthy();
+    expect(arraysEqual(factors[1], [7, 11, 16, 20])).toBeTruthy();
+  });
+
+  it('can factorize escapismic into vals', () => {
+    const escapismic = Temperament.fromCommas([
+      [24, -6, 0, 1, -5],
+      [32, -7, -9],
+    ]);
+    const factors = escapismic.valFactorize(600);
+    expect(factors).toHaveLength(3);
+    expect(factors[0][0]).toBe(21);
+    expect(factors[1][0]).toBe(22);
+    expect(factors[2][0]).toBe(543);
+  });
 });
 
 describe('Free Temperament', () => {
