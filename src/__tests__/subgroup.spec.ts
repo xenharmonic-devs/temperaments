@@ -160,4 +160,10 @@ describe('Fractional just intonation subgroup', () => {
     expect(arraysEqual(resolving[1], [32, -7, -9])).toBeTruthy();
     expect(arraysEqual(resolved[1], [32, -7, -9, 0, 0])).toBeTruthy();
   });
+
+  it('pads resolved monzos', () => {
+    const subgroup = new Subgroup(5);
+    const monzo = subgroup.resolveMonzo([-3, 2]);
+    expect(arraysEqual(monzo, [-3, 2, 0])).toBeTruthy();
+  });
 });

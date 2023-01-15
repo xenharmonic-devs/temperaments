@@ -450,7 +450,11 @@ export class Subgroup {
         // XXX: Strips away residual
         return this.toMonzo_(interval as Monzo);
       } else {
-        return [...interval] as Monzo;
+        const result = [...interval];
+        while (result.length < this.basis.length) {
+          result.push(0);
+        }
+        return result as Monzo;
       }
     } else {
       const [monzo, residual] = this.toMonzoAndResidual(
