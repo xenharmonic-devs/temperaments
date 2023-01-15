@@ -149,4 +149,15 @@ describe('Fractional just intonation subgroup', () => {
     expect(mapping[4]).toBeCloseTo(PRIME_CENTS[4]);
     expect(mapping[5] - mapping[2]).toBeCloseTo(1654);
   });
+
+  it("doesn't mutate resolving monzos", () => {
+    const subgroup = new Subgroup(11);
+    const resolving = [
+      [24, -6, 0, 1, -5],
+      [32, -7, -9],
+    ];
+    const resolved = resolving.map(monzo => subgroup.resolveMonzo(monzo, true));
+    expect(arraysEqual(resolving[1], [32, -7, -9])).toBeTruthy();
+    expect(arraysEqual(resolved[1], [32, -7, -9, 0, 0])).toBeTruthy();
+  });
 });

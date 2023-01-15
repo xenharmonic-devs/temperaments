@@ -231,12 +231,18 @@ export class Subgroup {
     const simpleIndices = this.simpleIndices(basisMonzos);
 
     if (simpleIndices.length) {
+      primeMonzo = [...primeMonzo];
       const result: Monzo = [];
       simpleIndices.forEach((index, i) => {
-        let component = index < primeMonzo.length ? primeMonzo[index] : 0;
-        component = Math.floor(component / basisMonzos![i][index]);
-        result.push(component);
-        primeMonzo[index] -= component * basisMonzos![i][index];
+        if (index >= primeMonzo.length) {
+          result.push(0);
+        } else {
+          const component = Math.floor(
+            primeMonzo[index] / basisMonzos![i][index]
+          );
+          result.push(component);
+          primeMonzo[index] -= component * basisMonzos![i][index];
+        }
       });
       return result;
     }
@@ -443,7 +449,7 @@ export class Subgroup {
         // XXX: Strips away residual
         return this.toMonzo_(interval as Monzo);
       } else {
-        return interval as Monzo;
+        return [...interval] as Monzo;
       }
     } else {
       const [monzo, residual] = this.toMonzoAndResidual(
