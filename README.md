@@ -69,10 +69,10 @@ const P4Cents = dot(perfectFourth, POTE); // 491.851
 
 ## Fractional just intonation subgroups
 ```typescript
-import {Temperament, namedComma} from 'temperaments';
+import {Temperament} from 'temperaments';
 
 const pinkan = Temperament.fromCommas(
-  [namedComma('island comma'), namedComma('password')],
+  ['676/675', '1216/1215'],
   '2.3.13/5.19/5'
 );
 
@@ -87,16 +87,17 @@ const passion = Temperament.fromName('passion');
 
 ## Color temperaments
 ```typescript
-const mavila = Temperament.fromColor('Layobi');
+import {colorTemperament} from 'temperaments';
+const mavila = colorTemperament('Layobi');
 
-const superkleismic = Temperament.fromColor('Tritriyo & Zotriyo');
+const superkleismic = colorTemperament('Tritriyo & Zotriyo');
 ```
 
-### Mixing named commas with color commas
+### Color commas
 ```typescript
-import {Temperament, namedComma, colorComma} from 'temperaments';
+import {colorComma} from 'temperaments';
 
-Temperament.fromCommas([namedComma('starling comma'), colorComma('Loru')]);
+const comma = colorComma('Loru');
 ```
 
 ## Large subgroups
@@ -122,3 +123,7 @@ If you want a mapping vector that covers a full prime limit, must pass `{primeMa
 const slendric = Temperament.fromCommas(['1029/1024']);
 const POTE = slendric.getMapping({primeMapping: true});
 ```
+
+## Additional resources
+
+To work with named temperaments like Meantone or Marvel see [named-temperaments](https://github.com/frostburn/named-temperaments).

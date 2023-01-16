@@ -30,16 +30,14 @@
   "types": "dist/src/index.d.ts",
   "devDependencies": {
     "@types/node": "^18.11.18",
-    "copyfiles": "^2.4.1",
     "gts": "^3.1.1",
     "typedoc": "^0.23.23",
     "typescript": "^4.9.4",
     "vitest": "^0.24.5"
   },
   "scripts": {
-    "build": "npm run compile && npm run copyfiles",
+    "build": "npm run compile",
     "compile": "tsc",
-    "copyfiles": "npx copyfiles ./resources/* ./dist/",
     "lint": "gts lint",
     "clean": "gts clean",
     "fix": "gts fix",
@@ -47,10 +45,6 @@
     "pretest": "npm run build",
     "posttest": "npm run lint",
     "test": "vitest",
-    "preenumerate": "npm run build",
-    "enumerate": "node dist/scripts/enumerate_temperaments",
-    "precheck-redundant": "npm run build",
-    "check-redundant": "node dist/scripts/check_redundant_names",
     "doc": "typedoc --entryPointStrategy packages . --name temperaments"
   },
   "dependencies": {

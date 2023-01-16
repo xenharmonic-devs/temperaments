@@ -1020,46 +1020,4 @@ export class Temperament extends BaseTemperament {
     const intValue = new IntClifford(value);
     return new Temperament(IntClifford, intValue, subgroup_);
   }
-
-  // Monkey patched in at names.ts
-  /**
-   * Retrieve a temperament from the database based on its name.
-   * @param name Community name of the temperament.
-   * @param subgroup Subgroup for narrowing down the options.
-   * @returns A `Temperament` instance with the given name.
-   */
-  static fromName(
-    name: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-    subgroup?: SubgroupValue // eslint-disable-line @typescript-eslint/no-unused-vars
-  ): Temperament {
-    throw new Error('Unimplemented');
-  }
-
-  /**
-   * Construct a temperament based on its name in [Color Notation](https://en.xen.wiki/w/Color_notation/Temperament_Names).
-   * @param color Color name of the temperament such as `'Sagugu & Zotrigu'`.
-   * @returns A `Temperament` instance with the given color name.
-   */
-  static fromColor(
-    color: string // eslint-disable-line @typescript-eslint/no-unused-vars
-  ): Temperament {
-    throw new Error('Unimplemented');
-  }
-
-  /**
-   * Obtain the names given to the temperament.
-   */
-  getNames(): Names {
-    throw new Error('Unimplemented');
-  }
 }
-
-/** Names of a temperament. */
-export type Names = {
-  /** A name the xenharmonic community may have given to the temperament. */
-  given?: string;
-  /** The temperament's name in Color Notation if it can be calculated automatically. */
-  color?: string;
-  /** The temperament's wedgie as a string. */
-  wedgie: string;
-};

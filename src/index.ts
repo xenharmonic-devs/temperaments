@@ -1,6 +1,5 @@
 export * from './color';
 export * from './monzo';
-export * from './names';
 export * from './subgroup';
 export * from './temperament';
 export * from './utils';
