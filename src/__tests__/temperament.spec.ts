@@ -690,6 +690,12 @@ describe('Temperament', () => {
     expect(factors[1][0]).toBe(22);
     expect(factors[2][0]).toBe(521);
   });
+
+  it('has sanity limits in val factoring', () => {
+    const temperament = Temperament.fromPrefix(2, [0, 3, 3], '2.5.7.11');
+    const factors = temperament.valFactorize(5, 100, 0, 'GM');
+    expect(factors).toHaveLength(2);
+  });
 });
 
 describe('Free Temperament', () => {

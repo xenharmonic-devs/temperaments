@@ -173,12 +173,14 @@ function distance(a: Val, b: Val) {
  * @param initialDivisions First edo to consider.
  * @param finalDivisions Last edo to consider.
  * @param delta Initial leap size in bisection search.
+ * @param maxBisections Maximum number of bisections to perform during the search.
  */
 export function* generalizedPatentVals(
   jip: Jip,
   initialDivisions = 1,
   finalDivisions = Infinity,
-  delta = 0.17
+  delta = 0.17,
+  maxBisections = 64
 ) {
   const finalSize = finalDivisions / jip[0];
   let lastSize = initialDivisions / jip[0];
@@ -187,19 +189,21 @@ export function* generalizedPatentVals(
 
   let nextSize = lastSize + delta;
   let next = jip.map(j => Math.round(j * nextSize));
+  let numBisect = 0;
   do {
     const d = distance(last, next);
     if (d === 0) {
       lastSize = nextSize;
       nextSize += delta;
       next = jip.map(j => Math.round(j * nextSize));
-    } else if (d === 1) {
+    } else if (d === 1 || numBisect >= maxBisections) {
       lastSize = nextSize;
       last = next;
       yield last;
     } else {
       nextSize -= 0.5 * (nextSize - lastSize);
       next = jip.map(j => Math.round(j * nextSize));
+      numBisect++;
     }
   } while (lastSize <= finalSize);
 }
