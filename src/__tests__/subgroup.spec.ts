@@ -166,4 +166,15 @@ describe('Fractional just intonation subgroup', () => {
     const monzo = subgroup.resolveMonzo([-3, 2]);
     expect(arraysEqual(monzo, [-3, 2, 0])).toBeTruthy();
   });
+
+  it('iterates over a GPV sequence in 5-limit', () => {
+    const subgroup = new Subgroup(5);
+    const vals = [...subgroup.generalizedPatentVals(5, 6)];
+    expect(arraysEqual(vals[0], [5, 8, 12]));
+    expect(arraysEqual(vals[1], [5, 9, 12]));
+    expect(arraysEqual(vals[2], [5, 9, 13]));
+    expect(arraysEqual(vals[3], [6, 9, 13]));
+    expect(arraysEqual(vals[4], [6, 9, 14]));
+    expect(arraysEqual(vals[5], [6, 10, 14]));
+  });
 });

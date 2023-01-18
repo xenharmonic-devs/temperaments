@@ -158,3 +158,48 @@ export function* wartVariants(val: Val, radius: number): Generator<Val> {
   }
   yield* vary(val, 1);
 }
+
+function distance(a: Val, b: Val) {
+  let result = 0;
+  for (let i = 0; i < a.length; ++i) {
+    result += Math.abs(a[i] - b[i]);
+  }
+  return result;
+}
+
+/**
+ * Iterate over generalized patent vals.
+ * @param jip Just intonation point.
+ * @param initialDivisions First edo to consider.
+ * @param finalDivisions Last edo to consider.
+ * @param delta Initial leap size in bisection search.
+ */
+export function* generalizedPatentVals(
+  jip: Jip,
+  initialDivisions = 1,
+  finalDivisions = Infinity,
+  delta = 0.17
+) {
+  const finalSize = finalDivisions / jip[0];
+  let lastSize = initialDivisions / jip[0];
+  let last = jip.map(j => Math.round(j * lastSize));
+  yield last;
+
+  let nextSize = lastSize + delta;
+  let next = jip.map(j => Math.round(j * nextSize));
+  do {
+    const d = distance(last, next);
+    if (d === 0) {
+      lastSize = nextSize;
+      nextSize += delta;
+      next = jip.map(j => Math.round(j * nextSize));
+    } else if (d === 1) {
+      lastSize = nextSize;
+      last = next;
+      yield last;
+    } else {
+      nextSize -= 0.5 * (nextSize - lastSize);
+      next = jip.map(j => Math.round(j * nextSize));
+    }
+  } while (lastSize <= finalSize);
+}

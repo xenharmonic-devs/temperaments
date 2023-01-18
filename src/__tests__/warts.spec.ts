@@ -1,7 +1,13 @@
 import {describe, it, expect} from 'vitest';
-import {arraysEqual} from 'xen-dev-utils';
+import {arraysEqual, LOG_PRIMES, norm, sub} from 'xen-dev-utils';
 
-import {fromWarts, toWarts, wartVariants} from '../warts';
+import {
+  fromWarts,
+  generalizedPatentVals,
+  toWarts,
+  Val,
+  wartVariants,
+} from '../warts';
 
 describe('Val to wart converter', () => {
   it('converts <12 19 28]', () => {
@@ -66,6 +72,22 @@ describe('Variant iterator', () => {
     ];
     for (let i = 0; i < expected.length; ++i) {
       expect(arraysEqual(variants[i], expected[i])).toBeTruthy();
+    }
+  });
+});
+
+describe('Generalized patent val iterator', () => {
+  it('iterates over a GPV sequence in 7-limit', () => {
+    let last: Val | undefined;
+    let i = 0;
+    for (const val of generalizedPatentVals(LOG_PRIMES.slice(0, 4))) {
+      if (last !== undefined) {
+        expect(norm(sub(val, last), 'taxicab')).toBe(1);
+      }
+      last = val;
+      if (i++ > 100) {
+        break;
+      }
     }
   });
 });

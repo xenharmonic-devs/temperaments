@@ -15,7 +15,14 @@ import {
   valueToCents,
 } from 'xen-dev-utils';
 import {MonzoValue} from './monzo';
-import {fromWarts, isDigit, patentVal, toWarts, Val} from './warts';
+import {
+  fromWarts,
+  generalizedPatentVals,
+  isDigit,
+  patentVal,
+  toWarts,
+  Val,
+} from './warts';
 
 /** Units of musical pitch.
  * 'ratio' means multiplicative units.
@@ -475,5 +482,15 @@ export class Subgroup {
     return this.basis
       .map(b => b.d === 1 && PRIMES.includes(b.n))
       .reduce((a, b) => a && b);
+  }
+
+  /**
+   * Iterate over generalized patent vals.
+   * @param initialDivisions First edo to consider.
+   * @param finalDivisions Last edo to consider.
+   * @param delta Initial leap size in bisection search.
+   */
+  *generalizedPatentVals(initialDivisions = 1, delta = 0.17) {
+    yield* generalizedPatentVals(this.jip('nats'), initialDivisions, delta);
   }
 }
