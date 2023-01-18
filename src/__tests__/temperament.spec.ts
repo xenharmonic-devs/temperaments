@@ -673,7 +673,7 @@ describe('Temperament', () => {
 
   it('can factorize jamesbond into vals', () => {
     const jamesbond = Temperament.fromCommas(['25/24', '81/80'], 7);
-    const factors = jamesbond.valFactorize(99, 1);
+    const factors = jamesbond.valFactorize(2, 99, 1);
     expect(factors).toHaveLength(2);
     expect(arraysEqual(factors[0], [7, 11, 16, 19])).toBeTruthy();
     expect(arraysEqual(factors[1], [7, 11, 16, 20])).toBeTruthy();
@@ -684,11 +684,11 @@ describe('Temperament', () => {
       [24, -6, 0, 1, -5],
       [32, -7, -9],
     ]);
-    const factors = escapismic.valFactorize(600);
+    const factors = escapismic.valFactorize(2, 600, 0, 'GPV');
     expect(factors).toHaveLength(3);
     expect(factors[0][0]).toBe(21);
     expect(factors[1][0]).toBe(22);
-    expect(factors[2][0]).toBe(543);
+    expect(factors[2][0]).toBe(521);
   });
 });
 
