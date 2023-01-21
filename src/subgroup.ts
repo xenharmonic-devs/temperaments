@@ -1,5 +1,6 @@
 import {lusolve, transpose} from 'mathjs';
 import {
+  add,
   centsToNats,
   dot,
   Fraction,
@@ -9,6 +10,7 @@ import {
   natsToCents,
   natsToSemitones,
   PRIMES,
+  scale,
   semitonesToNats,
   toMonzo,
   toMonzoAndResidual,
@@ -281,6 +283,20 @@ export class Subgroup {
     return monzo
       .map((exponent, i) => this.basis[i].pow(exponent))
       .reduce((a, b) => a.mul(b));
+  }
+
+  /**
+   * Convert a monzo in the subgroup's basis to the standard prime basis.
+   * @param monzo Array of basis exponents.
+   * @returns Array of prime exponents.
+   */
+  toPrimeMonzo(monzo: Monzo) {
+    const basisMonzos = this.basisMonzos();
+    let result: Monzo = [];
+    for (let i = 0; i < Math.min(monzo.length, basisMonzos.length); ++i) {
+      result = add(result, scale(basisMonzos[i], monzo[i]));
+    }
+    return result;
   }
 
   /**

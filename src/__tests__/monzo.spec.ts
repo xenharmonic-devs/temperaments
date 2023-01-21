@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
-import {Fraction} from 'xen-dev-utils';
-import {spell, split} from '../monzo';
+import {Fraction, monzoToFraction} from 'xen-dev-utils';
+import {simplifyCommas, spell, split} from '../monzo';
 
 describe('Respeller', () => {
   it('knows that 81/64 should be spelled 5/4 in meantone', () => {
@@ -46,5 +46,15 @@ describe('Splitter', () => {
     const neutralThird = split('3/2', ['81/80', '121/120']);
     const spelling = spell(neutralThird, ['81/80', '121/120']);
     expect(spelling.minBenedetti.equals('11/9')).toBeTruthy();
+  });
+});
+
+describe('Comma simplifier', () => {
+  it('can simplify the commas of uniwiz', () => {
+    const commas = ['289/288', '561/560', '1089/1088'];
+    const simplified = simplifyCommas(commas).map(c =>
+      monzoToFraction(c).toFraction()
+    );
+    expect(simplified.join(', ')).toBe('289/288, 385/384, 561/560');
   });
 });
