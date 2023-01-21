@@ -10,7 +10,9 @@ import {
   LOG_PRIMES,
   mmod,
   natsToCents,
+  monzoToFraction,
 } from 'xen-dev-utils';
+import {simplifyCommas} from '../monzo';
 
 describe('Temperament', () => {
   it('supports equal temperaments', () => {
@@ -695,6 +697,24 @@ describe('Temperament', () => {
     const temperament = Temperament.fromPrefix(2, [0, 3, 3], '2.5.7.11');
     const factors = temperament.valFactorize(5, 100, 0, 'GM');
     expect(factors).toHaveLength(2);
+  });
+
+  it('can factorize miracle into commas', () => {
+    const miracle = Temperament.fromVals([10, 21], 7);
+    const factors = miracle.commaFactorize();
+    const commas = simplifyCommas(factors);
+    expect(commas.map(c => monzoToFraction(c).toFraction()).join(', ')).toBe(
+      '225/224, 1029/1024'
+    );
+  });
+
+  it('can factorize 12edo into commas', () => {
+    const twelve = Temperament.fromVals([12], 5);
+    const factors = twelve.commaFactorize();
+    const commas = simplifyCommas(factors);
+    expect(commas.map(c => monzoToFraction(c).toFraction()).join(', ')).toBe(
+      '81/80, 128/125'
+    );
   });
 });
 

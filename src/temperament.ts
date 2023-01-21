@@ -497,6 +497,74 @@ abstract class BaseTemperament {
     }
     throw new Error('Val factorization not found within the search space');
   }
+
+  /**
+   * Factorize the temperament into commas.
+   * @param maxDivisions Maximum divisions of the equave to consider.
+   * @returns An array of commas that recreates the original temperament when passed to `.fromCommas`.
+   * @throws An error if the search space doesn't contain the factors.
+   */
+  commaFactorize(maxDivisions = 99) {
+    const mapping = this.getJip('nats');
+    const normalizedMapping = mapping.map(m => m / mapping[0]);
+    const corank = this.dimensions - this.getRank();
+
+    if (corank <= 1) {
+      return [[...this.value.dual().vector()]];
+    }
+
+    const hyperwedges: [number, AlgebraElement][] = [[corank, this.value]];
+
+    const commaDuals: AlgebraElement[] = [];
+    let hypervee = this.algebra.pseudoscalar();
+
+    function pushAndVee(commaDual: AlgebraElement) {
+      const newVee = hypervee.vee(commaDual);
+      if (newVee.isNil()) {
+        return false;
+      }
+      hypervee = newVee;
+      commaDuals.push(commaDual);
+      return commaDuals.length === corank;
+    }
+
+    for (let divisions = 1; divisions <= maxDivisions; ++divisions) {
+      const val = this.algebra.fromVector(
+        normalizedMapping.map(m => Math.round(m * divisions))
+      );
+      for (let [cr, hyperwedge] of hyperwedges) {
+        hyperwedge = hyperwedge.wedge(val);
+        if (hyperwedge.isNil()) {
+          continue;
+        }
+        cr -= 1;
+        const factor = hyperwedge.reduce(gcd);
+        hyperwedge.rescale(1 / factor);
+
+        if (cr <= 1) {
+          if (pushAndVee(hyperwedge)) {
+            return commaDuals.map(cd => [...cd.dual().vector()]);
+          }
+          continue;
+        }
+
+        const neg = hyperwedge.neg();
+        let novel = true;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        for (const [_, existing] of hyperwedges) {
+          if (hyperwedge.equals(existing) || neg.equals(existing)) {
+            novel = false;
+            break;
+          }
+        }
+        if (novel) {
+          hyperwedges.push([cr, hyperwedge]);
+        }
+      }
+    }
+
+    throw new Error('Comma factorization not found within the search space');
+  }
 }
 
 /**

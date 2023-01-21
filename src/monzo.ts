@@ -1,12 +1,15 @@
 import {wedge} from 'ts-geometric-algebra';
 import {
+  accumulate,
   add,
+  dot,
   Fraction,
   FractionValue,
   gcd,
   LOG_PRIMES,
   Monzo,
   monzoToFraction,
+  scale,
   sub,
   toMonzo,
 } from 'xen-dev-utils';
@@ -77,7 +80,7 @@ function basisSpell(monzo: Monzo, basis: Monzo[], searchBreadth: number) {
     }
   } while (!done);
 
-  const best = [...basisMonzo];
+  const best: Monzo = [...basisMonzo];
   const result = {
     minNumerator: best,
     minDenominator: best,
@@ -287,4 +290,44 @@ export function split(
     throw new Error('Failed to find the split.');
   }
   return monzoToFraction(result);
+}
+
+function tenney(monzo: Monzo) {
+  return monzo
+    .map((component, index) => Math.abs(component) * LOG_PRIMES[index])
+    .reduce((a, b) => a + b);
+}
+
+function normalize(monzo: Monzo) {
+  const size = dot(monzo, LOG_PRIMES);
+  if (size < 0) {
+    return monzo.map(m => -m);
+  }
+  return monzo;
+}
+
+/**
+ * Find simpler spellings for an array of commas.
+ * @param commas List of commas that should only affect the spelling, but not the pitch.
+ * @param searchBreadth Half-width of the search lattice.
+ * @returns An array of commas with smaller or equal tenney heights.
+ */
+export function simplifyCommas(commas: MonzoValue[], searchBreadth = 3) {
+  const monzos = commas.map(comma => [...resolveMonzo(comma)]);
+
+  for (let i = 0; i < monzos.length; ++i) {
+    const basis = [...monzos];
+    basis.splice(i, 1);
+    const simplifications = basisSpell(
+      monzos[i],
+      basis,
+      searchBreadth
+    ).minBenedetti;
+    for (let j = 0; j < basis.length; ++j) {
+      accumulate(monzos[i], scale(basis[j], simplifications[j]));
+    }
+  }
+
+  monzos.sort((a, b) => tenney(a) - tenney(b));
+  return monzos.map(normalize);
 }
