@@ -309,6 +309,32 @@ export class Subgroup {
   }
 
   /**
+   * List all of the letters used to notate warts in the subgroup.
+   * @returns An array of single letter strings that are valid in wart notation for the subgroup.
+   */
+  wartLetters() {
+    const result = [];
+    let formalIndex = 0;
+    for (const factor of this.basis) {
+      let wart: string;
+      if (factor.d === 1 && PRIMES.includes(factor.n)) {
+        wart = String.fromCharCode(97 + PRIMES.indexOf(factor.n));
+        if (wart >= 'q') {
+          throw new Error('Subgroup prime complexity too high');
+        }
+      } else {
+        wart = String.fromCharCode(113 + formalIndex);
+        if (wart > 'z') {
+          throw new Error('Subgroup formal prime complexity too high');
+        }
+        formalIndex++;
+      }
+      result.push(wart);
+    }
+    return result;
+  }
+
+  /**
    * Calculate the val corresponding to the given warts as progressive modifications to the patent val.
    * @param divisionsOrWarts Number of divisions of the first basis factor or a number followed by
    * letters of the alphabet corresponding to the primes in order with formal primes represented by letters starting from 'q'.

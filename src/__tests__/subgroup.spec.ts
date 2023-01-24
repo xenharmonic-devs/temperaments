@@ -177,4 +177,9 @@ describe('Fractional just intonation subgroup', () => {
     expect(arraysEqual(vals[4], [6, 9, 14]));
     expect(arraysEqual(vals[5], [6, 10, 14]));
   });
+
+  it('can list all valid warts', () => {
+    const subgroup = new Subgroup('5.41.9.13/7');
+    expect(subgroup.wartLetters().join('')).toBe('cmqr');
+  });
 });
