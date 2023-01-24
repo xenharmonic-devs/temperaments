@@ -50,7 +50,12 @@ export type TuningOptions = {
  * 'mapping': Use ET approximation to the temperament's POTE mapping.
  * 'GM': Use generalized approximations to the temperament's TE mapping.
  */
-export type FactorizationStrategy = 'patent' | 'GPV' | 'mapping' | 'GM';
+export type FactorizationStrategy =
+  | 'patent'
+  | 'GPV'
+  | 'mapping'
+  | 'GM'
+  | 'warts';
 
 abstract class BaseTemperament {
   /** The Clifford algebra where the temperament is interpreted in. All-positive metric with integer coefficients. */
@@ -432,7 +437,8 @@ abstract class BaseTemperament {
     minDivisions = 2,
     maxDivisions = 99,
     wartRadius = 0,
-    strategy: FactorizationStrategy = 'patent'
+    strategy: FactorizationStrategy = 'patent',
+    subgroup?: Subgroup
   ) {
     let mapping: Mapping;
     if (strategy === 'patent' || strategy === 'GPV') {
@@ -462,13 +468,28 @@ abstract class BaseTemperament {
       return false;
     };
 
+    function* vary(
+      letters: string[],
+      base: string,
+      radius: number
+    ): Generator<Val> {
+      if (radius <= 0) {
+        yield subgroup!.fromWarts(base);
+      } else {
+        for (const letter of letters) {
+          yield* vary(letters, base + letter, radius - 1);
+        }
+      }
+    }
+
+    const normalizedMapping = mapping.map(m => m / mapping[0]);
+
     if (strategy === 'patent' || strategy === 'mapping') {
       for (
         let divisions = minDivisions;
         divisions <= maxDivisions;
         ++divisions
       ) {
-        const normalizedMapping = mapping.map(m => m / mapping[0]);
         const base = normalizedMapping.map(m => Math.round(m * divisions));
         for (const variant of wartVariants(base, wartRadius)) {
           if (variant.reduce(gcd) !== 1) {
@@ -480,19 +501,37 @@ abstract class BaseTemperament {
           }
         }
       }
-    }
-    for (const base of generalizedPatentVals(
-      mapping,
-      minDivisions,
-      maxDivisions
-    )) {
-      for (const variant of wartVariants(base, wartRadius)) {
-        if (variant.reduce(gcd) !== 1) {
-          continue;
+    } else if (strategy === 'GPV' || strategy === 'GM') {
+      for (const base of generalizedPatentVals(
+        mapping,
+        minDivisions,
+        maxDivisions
+      )) {
+        for (const variant of wartVariants(base, wartRadius)) {
+          if (variant.reduce(gcd) !== 1) {
+            continue;
+          }
+          const candidate = this.algebra.fromVector(variant);
+          if (pushAndWedge(candidate)) {
+            return factors;
+          }
         }
-        const candidate = this.algebra.fromVector(variant);
-        if (pushAndWedge(candidate)) {
-          return factors;
+      }
+    } else {
+      const letters = subgroup!.wartLetters().slice(1);
+
+      for (
+        let divisions = minDivisions;
+        divisions <= maxDivisions;
+        ++divisions
+      ) {
+        for (let radius = 0; radius <= wartRadius; ++radius) {
+          for (const variant of vary(letters, divisions.toString(), radius)) {
+            const candidate = this.algebra.fromVector(variant);
+            if (pushAndWedge(candidate)) {
+              return factors;
+            }
+          }
         }
       }
     }
@@ -1027,6 +1066,29 @@ export class Temperament extends BaseTemperament {
    */
   kernelJoin(other: Temperament, persistence = 100, threshold = 1e-4) {
     return this.valMeet(other, persistence, threshold);
+  }
+
+  /**
+   * Factorize the temperament into vals.
+   * @param maxDivisions Maximum divisions of the equave to consider.
+   * @param wartRadius Maximum deviations from closest tunings to consider.
+   * @param strategy Factorization strategy.
+   * @returns An array of vals that recreates the original temperament when passed to `.fromVals`.
+   * @throws An error if the search space doesn't contain the factors.
+   */
+  valFactorize(
+    minDivisions = 2,
+    maxDivisions = 99,
+    wartRadius = 0,
+    strategy: FactorizationStrategy = 'patent'
+  ) {
+    return super.valFactorize(
+      minDivisions,
+      maxDivisions,
+      wartRadius,
+      strategy,
+      this.subgroup
+    );
   }
 
   /**
