@@ -716,6 +716,20 @@ describe('Temperament', () => {
       '81/80, 128/125'
     );
   });
+
+  it('can factorize enlil into commas', () => {
+    const subgroup = new Subgroup(13);
+    const prefix = [0, 6, -6, 0, 5, -5, 0, -1, -14, 14];
+    const temperament = Temperament.fromPrefix(3, prefix, subgroup);
+    const reconstructed = Temperament.fromCommas(
+      temperament.commaFactorize(),
+      subgroup
+    );
+    expect(
+      reconstructed.equals(temperament) ||
+        reconstructed.value.neg().equals(temperament.value)
+    ).toBeTruthy();
+  });
 });
 
 describe('Free Temperament', () => {

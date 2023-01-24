@@ -1,5 +1,5 @@
 import {MonzoValue, resolveMonzo} from './monzo';
-import {AlgebraElement, wedge} from 'ts-geometric-algebra';
+import {AlgebraElement, vee, wedge} from 'ts-geometric-algebra';
 import {getAlgebra} from './utils';
 import {Mapping, PitchUnits, Subgroup, SubgroupValue} from './subgroup';
 import {fromWarts, generalizedPatentVals, Val, wartVariants} from './warts';
@@ -9,6 +9,7 @@ import {
   FractionValue,
   gcd,
   iteratedEuclid,
+  iterKCombinations,
   mmod,
   Monzo,
   natsToCents,
@@ -516,17 +517,24 @@ abstract class BaseTemperament {
     const hyperwedges: [number, AlgebraElement][] = [[corank, this.value]];
 
     const commaDuals: AlgebraElement[] = [];
-    let hypervee = this.algebra.pseudoscalar();
 
-    function pushAndVee(commaDual: AlgebraElement) {
-      const newVee = hypervee.vee(commaDual);
-      if (newVee.isNil()) {
-        return false;
+    const pushAndVee = (commaDual: AlgebraElement) => {
+      const neg = commaDual.neg();
+      for (const existing of commaDuals) {
+        if (commaDual.equals(existing) || neg.equals(existing)) {
+          return null;
+        }
       }
-      hypervee = newVee;
       commaDuals.push(commaDual);
-      return commaDuals.length === corank;
-    }
+      const negValue = this.value.neg();
+      for (const combination of iterKCombinations(commaDuals, corank)) {
+        const hypervee = vee(...combination);
+        if (hypervee.equals(this.value) || hypervee.equals(negValue)) {
+          return combination;
+        }
+      }
+      return null;
+    };
 
     for (let divisions = 1; divisions <= maxDivisions; ++divisions) {
       const val = this.algebra.fromVector(
@@ -542,8 +550,9 @@ abstract class BaseTemperament {
         hyperwedge.rescale(1 / factor);
 
         if (cr <= 1) {
-          if (pushAndVee(hyperwedge)) {
-            return commaDuals.map(cd => [...cd.dual().vector()]);
+          const result = pushAndVee(hyperwedge);
+          if (result !== null) {
+            return result.map(cd => [...cd.dual().vector()]);
           }
           continue;
         }
