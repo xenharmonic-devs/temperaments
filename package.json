@@ -7,12 +7,12 @@
   "main": "dist/src/index",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frostburn/temperaments.git"
+    "url": "git+https://github.com/xenharmonic-devs/temperaments.git"
   },
   "bugs": {
-    "url": "https://github.com/frostburn/temperaments/issues"
+    "url": "https://github.com/xenharmonic-devs/temperaments/issues"
   },
-  "homepage": "https://github.com/frostburn/temperaments#readme",
+  "homepage": "https://github.com/xenharmonic-devs/temperaments#readme",
   "keywords": [
     "Microtonal",
     "Music",
