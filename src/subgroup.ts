@@ -227,7 +227,7 @@ export class Subgroup {
     const monzo = this.toMonzo_(primeMonzo, basisMonzos);
 
     monzo.forEach((component, index) => {
-      fraction = fraction.div(this.basis[index].pow(component));
+      fraction = fraction.div(this.basis[index].pow(component)!);
     });
 
     return [monzo, fraction];
@@ -281,7 +281,7 @@ export class Subgroup {
    */
   toFraction(monzo: Monzo) {
     return monzo
-      .map((exponent, i) => this.basis[i].pow(exponent))
+      .map((exponent, i) => this.basis[i].pow(exponent)!)
       .reduce((a, b) => a.mul(b));
   }
 

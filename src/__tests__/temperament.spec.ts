@@ -233,7 +233,7 @@ describe('Temperament', () => {
   });
 
   it('calculates arcturus in the 3.5.7 subgroup', () => {
-    const temperament = Temperament.fromCommas([['15625', '15309']]);
+    const temperament = Temperament.fromCommas(['15625/15309']);
     const arcturus = temperament.getMapping();
     const majorSixth = temperament.subgroup.toMonzoAndResidual(
       new Fraction(5, 3)

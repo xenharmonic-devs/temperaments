@@ -5,6 +5,10 @@
   "description": "Musical tunings/temperaments for Javascript",
   "license": "MIT",
   "main": "dist/src/index",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/frostburn"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xenharmonic-devs/temperaments.git"
@@ -29,11 +33,11 @@
   ],
   "types": "dist/src/index.d.ts",
   "devDependencies": {
-    "@types/node": "^18.11.18",
-    "gts": "^3.1.1",
-    "typedoc": "^0.23.23",
-    "typescript": "^4.9.4",
-    "vitest": "^0.24.5"
+    "@types/node": "^20.10.4",
+    "gts": "^5.2.0",
+    "typedoc": "^0.25.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.2"
   },
   "scripts": {
     "build": "npm run compile",
@@ -45,11 +49,11 @@
     "pretest": "npm run build",
     "posttest": "npm run lint",
     "test": "vitest",
-    "doc": "typedoc --entryPointStrategy packages . --name temperaments"
+    "doc": "typedoc src/index.ts . --name temperaments"
   },
   "dependencies": {
-    "mathjs": "^11.5.0",
+    "mathjs": "^12.1.0",
     "ts-geometric-algebra": "^0.5.0",
-    "xen-dev-utils": "^0.1.4"
+    "xen-dev-utils": "^0.2.0"
   }
 }
