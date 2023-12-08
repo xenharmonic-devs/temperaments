@@ -188,7 +188,7 @@ export function spell(
   function combine(basisMonzo: Monzo) {
     return fraction_.mul(
       basisMonzo
-        .map((exponent, i) => commas_[i].pow(exponent))
+        .map((exponent, i) => commas_[i].pow(exponent)!)
         .reduce((a, b) => a.mul(b))
     );
   }
