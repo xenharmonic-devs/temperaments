@@ -243,6 +243,17 @@ describe('Temperament', () => {
     expect(dot(arcturus, majorSixth)).toBeCloseTo(878.042);
   });
 
+  it('calculates frostburn in the 2.5.7 subgroup', () => {
+    const monzo = [-5, 0, 7, -4, 0, 0, 0];
+    const subgroup = new Subgroup('2.5.7');
+    const temperament = Temperament.fromCommas([monzo], subgroup, true);
+    const [period, generator] = temperament.periodGenerator({
+      temperEquaves: true,
+    });
+    expect(period).toBeCloseTo(1200.3479);
+    expect(generator).toBeCloseTo(204.3389);
+  });
+
   it('calculates starling rank 3 from a comma', () => {
     const comma = toMonzo(new Fraction(126, 125));
     const temperament = Temperament.fromCommas([comma]);
