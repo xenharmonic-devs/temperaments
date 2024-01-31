@@ -9,7 +9,7 @@ describe('Respeller', () => {
   });
 
   it('knows that the major third is 9/7 in pajara', () => {
-    const third = new Fraction('3/2').div('7/5').pow(4);
+    const third = new Fraction('3/2').div('7/5').pow(4)!;
     const spelling = spell(third, ['50/49', '64/63']);
     expect(spelling.minBenedetti.equals('9/7')).toBeTruthy();
     expect(spelling.noTwosMinNumerator.equals('32/25')).toBeTruthy();
@@ -17,19 +17,19 @@ describe('Respeller', () => {
   });
 
   it('knows that the minor third is 7/6 is in pajara', () => {
-    const third = new Fraction('4/3').pow(3).div('10/7').div('10/7');
+    const third = new Fraction('4/3').pow(3)!.div('10/7').div('10/7');
     const spelling = spell(third, ['50/49', '64/63']);
     expect(spelling.minBenedetti.equals('7/6')).toBeTruthy();
   });
 
   it('knows that the minor third is 6/5 in srutal', () => {
-    const third = new Fraction('3/2').div('45/32').pow(3);
+    const third = new Fraction('3/2').div('45/32').pow(3)!;
     const spelling = spell(third, ['2048/2025', '4375/4374']);
     expect(spelling.minBenedetti.equals('6/5')).toBeTruthy();
   });
 
   it('knows that the major third is 5/4 is in srutal', () => {
-    const third = new Fraction('4/3').pow(2).div('45/32');
+    const third = new Fraction('4/3').pow(2)!.div('45/32');
     const spelling = spell(third, ['2048/2025', '4375/4374']);
     expect(spelling.minBenedetti.equals('5/4')).toBeTruthy();
   });

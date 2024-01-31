@@ -79,7 +79,7 @@ describe('Fractional just intonation subgroup', () => {
     expect(monzo[2]).toBe(1);
     expect(
       new Fraction(2)
-        .pow(monzo[0])
+        .pow(monzo[0])!
         .mul(9 ** monzo[1])
         .mul(5 ** monzo[2])
         .equals(new Fraction(45, 32))
@@ -94,7 +94,7 @@ describe('Fractional just intonation subgroup', () => {
     expect(arraysEqual(password, [6, -5, 0, 1])).toBeTruthy();
     expect(
       new Fraction(19, 5)
-        .pow(password[3])
+        .pow(password[3])!
         .div(3 ** -password[1])
         .mul(2 ** password[0])
         .equals(new Fraction(1216, 1215))
@@ -105,7 +105,7 @@ describe('Fractional just intonation subgroup', () => {
     expect(arraysEqual(island, [2, -3, 2, 0])).toBeTruthy();
     expect(
       new Fraction(13, 5)
-        .pow(island[2])
+        .pow(island[2])!
         .div(3 ** -island[1])
         .mul(2 ** island[0])
         .equals(new Fraction(676, 675))
