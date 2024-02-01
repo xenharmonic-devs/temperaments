@@ -138,61 +138,21 @@ abstract class BaseTemperament {
    * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
    * @returns A pair `[period, generator]` in cents (default) or the specified units.
    */
-  periodGenerator(options?: TuningOptions): [number, number] {
+  periodGenerators(options?: TuningOptions): number[] {
     const mappingOptions = Object.assign({}, options || {});
     mappingOptions.units = 'nats';
     mappingOptions.primeMapping = false;
     const mapping = this.getMapping(mappingOptions);
 
-    const [numPeriods, generatorMonzo] = this.numPeriodsGenerator();
+    const [numPeriods, generatorMonzos] = this.numPeriodsGenerators();
 
     const period = mapping[0] / numPeriods;
-    let generator = dot(mapping, generatorMonzo);
-    generator = Math.min(mmod(generator, period), mmod(-generator, period));
-    if (options?.units === 'nats') {
-      return [period, generator];
-    }
-    if (options?.units === 'ratio') {
-      return [Math.exp(period), Math.exp(generator)];
-    }
-    if (options?.units === 'semitones') {
-      return [natsToSemitones(period), natsToSemitones(generator)];
-    }
-    return [natsToCents(period), natsToCents(generator)];
-  }
-
-  /**
-   * Obtain the generators of the temperament.
-   * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
-   * @param modPeriod Reduce the generators by the first one interpreted as the period.
-   * @returns An array of generators `[period, generatorA, generatorB, ...]` in cents (default) or the specified units.
-   */
-  generators(options?: TuningOptions, modPeriod = true): number[] {
-    const mappingOptions = Object.assign({}, options || {});
-    mappingOptions.units = 'nats';
-    mappingOptions.primeMapping = false;
-    const mapping = this.getMapping(mappingOptions);
-
-    const basisMonzosAndDivisions = this.fractionalGenerators();
-
-    if (!basisMonzosAndDivisions.length) {
-      return [];
-    }
-    const period =
-      dot(mapping, basisMonzosAndDivisions[0][0]) /
-      basisMonzosAndDivisions[0][1];
-    const result = [period];
-    basisMonzosAndDivisions.slice(1).map(([monzo, divisions]) => {
-      const generator = dot(mapping, monzo) / divisions;
-      if (modPeriod) {
-        result.push(
-          Math.min(mmod(generator, period), mmod(-generator, period))
-        );
-      } else {
-        result.push(generator);
-      }
-    });
-
+    let generators = generatorMonzos.map(g => dot(mapping, g));
+    generators = generators.map(g =>
+      Math.min(mmod(g, period), mmod(-g, period))
+    );
+    generators.sort((a, b) => a - b);
+    const result = [period].concat(generators);
     if (options?.units === 'nats') {
       return result;
     }
@@ -254,56 +214,53 @@ abstract class BaseTemperament {
   }
 
   /**
-   * Obtain the number of periods per octave (or equave) and the generator in monzo form.
-   * The procedure assumes the temperament is of rank 2 and canonized.
-   * @returns A pair representing the number of periods per equave and the generator as a monzo of the temperament's subgroup.
+   * Obtain the number of periods per octave (or equave) and the generators in monzo form.
+   * The procedure assumes that the temperament is canonized.
+   * @returns A pair representing the number of periods per equave and the generators as monzos of the temperament's subgroup.
    */
-  numPeriodsGenerator(): [number, Monzo] {
+  numPeriodsGenerators(): [number, Monzo[]] {
+    const rank = this.getRank();
     const equaveUnit = this.algebra.basisBlade(0);
-    const equaveProj = equaveUnit.dot(this.value).vector();
-    const generator = iteratedEuclid(equaveProj);
-    const numPeriods = Math.abs(dot(generator, equaveProj));
+    const equaveOrthoComplement = equaveUnit.dotL(this.value);
+    const numPeriods = Math.abs(equaveOrthoComplement.reduce(gcd));
+    if (rank === 1) {
+      return [numPeriods, []];
+    }
+    if (rank === 2) {
+      const generator = iteratedEuclid(equaveOrthoComplement.vector());
+      return [numPeriods, [generator]];
+    }
 
-    return [numPeriods, generator];
-  }
+    let remaining = rank - 1;
 
-  /**
-   * Obtain basis monzos and their divisions that generate the full limit alongside the temperament's comma basis.
-   * @returns Array of basis monzos and their divisions.
-   */
-  fractionalGenerators() {
-    let hyperwedge = this.value.dual();
-
-    const basisMonzosAndDivisions: [number[], number][] = [];
-    for (let i = 0; i < this.algebra.dimensions; ++i) {
-      const multigen = this.algebra.basisBlade(i);
-      const multiwedge = hyperwedge.wedge(multigen);
-      if (multiwedge.ps) {
-        break;
+    const generators = [];
+    for (let i = 1; i < this.dimensions; ++i) {
+      const blade = this.algebra.basisBlade(i);
+      if (remaining === 1) {
+        const measure = blade
+          .wedge(generators.reduce((a, b) => a.wedge(b)))
+          .star(equaveOrthoComplement);
+        if (measure === numPeriods) {
+          generators.push(blade);
+          return [numPeriods, generators.map(g => [...g.vector()])];
+        }
+      } else if (
+        Math.abs(blade.dotL(equaveOrthoComplement).reduce(gcd)) === numPeriods
+      ) {
+        generators.push(blade);
+        remaining--;
       }
-      const divisions = Math.abs(multiwedge.reduce(gcd));
-      if ((i === 0 && divisions) || divisions === 1) {
-        basisMonzosAndDivisions.push([[...multigen.vector()], divisions]);
-        hyperwedge = multiwedge.scale(1 / divisions);
-      }
     }
-
-    // XXX: I have no idea what I'm doing.
-    const params = [];
-    for (let i = 0; i < this.algebra.dimensions; ++i) {
-      params.push(hyperwedge.wedge(this.algebra.basisBlade(i)).ps);
+    if (remaining !== 1) {
+      throw new Error('Failed to find generators');
     }
-    const monzo = iteratedEuclid(params);
-    hyperwedge = hyperwedge.wedge(this.algebra.fromVector(monzo));
-    const divisions = Math.abs(hyperwedge.reduce(gcd));
-    basisMonzosAndDivisions.push([monzo, divisions]);
-    hyperwedge.rescale(1 / divisions);
-
-    if (Math.abs(hyperwedge.ps) !== 1) {
-      throw new Error('Failed to extract generators');
-    }
-
-    return basisMonzosAndDivisions;
+    const final = iteratedEuclid(
+      generators
+        .reduce((a, b) => a.wedge(b))
+        .dotL(equaveOrthoComplement)
+        .vector()
+    );
+    return [numPeriods, [final].concat(generators.map(g => [...g.vector()]))];
   }
 
   /**

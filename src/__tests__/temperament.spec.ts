@@ -247,7 +247,7 @@ describe('Temperament', () => {
     const monzo = [-5, 0, 7, -4, 0, 0, 0];
     const subgroup = new Subgroup('2.5.7');
     const temperament = Temperament.fromCommas([monzo], subgroup, true);
-    const [period, generator] = temperament.periodGenerator({
+    const [period, generator] = temperament.periodGenerators({
       temperEquaves: true,
     });
     expect(period).toBeCloseTo(1200.3479);
@@ -368,7 +368,7 @@ describe('Temperament', () => {
   it('can figure out the period and a generator for meantone', () => {
     const syntonicComma = toMonzo(new Fraction(81, 80));
     const temperament = Temperament.fromCommas([syntonicComma]);
-    const [numPeriods, generator] = temperament.numPeriodsGenerator();
+    const [numPeriods, [generator]] = temperament.numPeriodsGenerators();
 
     expect(numPeriods).toBe(1);
     expect(generator.length).toBe(3);
@@ -383,7 +383,7 @@ describe('Temperament', () => {
   it('can figure out the period and a generator for orgone', () => {
     const orgonisma = toMonzo(new Fraction(65536, 65219));
     const temperament = Temperament.fromCommas([orgonisma]);
-    const [period, generator] = temperament.periodGenerator();
+    const [period, generator] = temperament.periodGenerators();
 
     expect(period).toBeCloseTo(1200);
     const poteGenerator = 323.372;
@@ -394,7 +394,7 @@ describe('Temperament', () => {
     const limma = toMonzoAndResidual(new Fraction(256, 243), 3)[0];
     const subgroup = new Subgroup(5);
     const temperament = Temperament.fromCommas([limma], subgroup);
-    const [period, generator] = temperament.periodGenerator();
+    const [period, generator] = temperament.periodGenerators();
 
     expect(period).toBeCloseTo(240);
     const poteGenerator = 399.594;
@@ -405,7 +405,7 @@ describe('Temperament', () => {
     const diesis = toMonzo(new Fraction(128, 125));
     const subgroup = new Subgroup(5);
     const temperament = Temperament.fromCommas([diesis], subgroup);
-    const [period, generator] = temperament.periodGenerator();
+    const [period, generator] = temperament.periodGenerators();
 
     expect(period).toBeCloseTo(400);
     const poteGenerator = 706.638;
@@ -414,7 +414,7 @@ describe('Temperament', () => {
 
   it('can figure out the period and a generator for miracle', () => {
     const temperament = Temperament.fromCommas(['225/224', '1029/1024']);
-    const [period, generator] = temperament.periodGenerator();
+    const [period, generator] = temperament.periodGenerators();
 
     expect(period).toBeCloseTo(1200);
     const poteGenerator = 116.675;
@@ -423,15 +423,15 @@ describe('Temperament', () => {
 
   it('can figure out the generators of whitewood', () => {
     const temperament = Temperament.fromCommas(['2187/2048'], 5);
-    const generators = temperament.generators();
+    const [period, generator] = temperament.periodGenerators();
 
-    expect(generators[0]).toBeCloseTo(1200 / 7);
-    expect(generators[1]).toBeCloseTo(mmod(374.469, 1200 / 7));
+    expect(period).toBeCloseTo(1200 / 7);
+    expect(generator).toBeCloseTo(mmod(374.469, 1200 / 7));
   });
 
   it('can figure out the generators of kleismic', () => {
     const temperament = Temperament.fromCommas(['15625/15552'], 7);
-    const generators = temperament.generators();
+    const generators = temperament.periodGenerators();
 
     const mapping = temperament.getMapping();
 
@@ -442,55 +442,83 @@ describe('Temperament', () => {
 
   it('can figure out the generators of manwe', () => {
     const temperament = Temperament.fromCommas(['176/175', '1331/1323']);
-    const generators = temperament.generators();
+    const generators = temperament.periodGenerators();
 
     const mapping = temperament.getMapping();
 
     expect(generators[0]).toBeCloseTo(mapping[0]);
-    expect(generators[1]).toBeCloseTo(mmod(-mapping[1], 1200));
-    expect(generators[2]).toBeCloseTo(mmod(mapping[2], 1200));
+    expect(generators[1]).toBeCloseTo(mmod(mapping[2], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(-mapping[1], 1200));
   });
 
   it('can figure out the generators of kalismic', () => {
     const temperament = Temperament.fromCommas(['9801/9800']);
-    const generators = temperament.generators();
+    const generators = temperament.periodGenerators();
 
     const mapping = temperament.getMapping();
 
     expect(generators[0]).toBeCloseTo(600);
     expect(generators[0]).toBeCloseTo(temperament.tune('99/70'));
-    expect(generators[1]).toBeCloseTo(mmod(mapping[1], 600));
-    expect(generators[2]).toBeCloseTo(mmod(-mapping[2], 600));
-    expect(generators[3]).toBeCloseTo(mmod(-mapping[4], 600));
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[4], 600));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[1], 600));
+    expect(generators[3]).toBeCloseTo(mmod(-mapping[2], 600));
   });
 
   it('can figure out the generators of xeimtionic', () => {
     const temperament = Temperament.fromCommas(['625/616']);
 
-    const generators = temperament.generators();
+    const generators = temperament.periodGenerators();
     const mapping = temperament.getMapping();
 
     expect(generators[0]).toBeCloseTo(1200);
-    expect(generators[1]).toBeCloseTo(mmod(mapping[1], 1200));
-    expect(generators[2]).toBeCloseTo(mmod(mapping[3], 1200));
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[2], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[1], 1200));
   });
 
   it('can figure out the generators of rank-2 xeimtionic', () => {
     const temperament = Temperament.fromCommas(['245/242', '625/616']);
-    const generators = temperament.generators();
-    const periodGenerator = temperament.periodGenerator();
-
-    expect(generators[1]).toBeCloseTo(periodGenerator[1]);
+    const generators = temperament.periodGenerators();
+    expect(generators[0]).toBeCloseTo(1200);
+    expect(generators[1]).toBeCloseTo(204.958);
   });
 
   it('can figure out the generators of frostmic', () => {
     const temperament = Temperament.fromCommas(['245/242']);
-    const generators = temperament.generators();
+    const generators = temperament.periodGenerators();
     const mapping = temperament.getMapping();
 
     expect(generators[0]).toBeCloseTo(1200);
     expect(generators[1]).toBeCloseTo(mmod(-mapping[2], 1200));
     expect(generators[2]).toBeCloseTo(mmod(mapping[3], 1200));
+  });
+
+  it('can figure out the generators of altierran', () => {
+    const temperament = Temperament.fromCommas([
+      '32805/32768',
+      '161280/161051',
+    ]);
+    const generators = temperament.periodGenerators();
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(1200);
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[1], 1200));
+    expect(generators[2]).toBeCloseTo(mmod(mapping[4], 1200));
+  });
+
+  it('can figure out the generators of tenierian', () => {
+    const temperament = Temperament.fromCommas([
+      '10985/10976',
+      '32805/32768',
+      '161280/161051',
+    ]);
+    const generators = temperament.periodGenerators();
+    const mapping = temperament.getMapping();
+
+    expect(generators[0]).toBeCloseTo(1200);
+    expect(generators[1]).toBeCloseTo(mmod(-mapping[3], 1200));
+    expect(generators[2]).toBeCloseTo(
+      mmod(13 * mapping[1] + 13 * mapping[4] + mapping[5], 1200)
+    );
   });
 
   it('can recover semaphore from its prefix', () => {
@@ -557,7 +585,7 @@ describe('Temperament', () => {
     );
     const pinkan = temperament.getMapping();
 
-    const [d, g] = temperament.numPeriodsGenerator();
+    const [d, [g]] = temperament.numPeriodsGenerators();
 
     const semifourth = subgroup.toMonzoAndResidual(new Fraction(15, 13))[0];
     const octave = [1, 0, 0, 0];
@@ -783,7 +811,7 @@ describe('Free Temperament', () => {
 
     const barbados = temperament.getMapping({units: 'nats'});
 
-    const [period, generator] = temperament.periodGenerator();
+    const [period, generator] = temperament.periodGenerators();
 
     temperament.canonize();
     const prefix = temperament.rankPrefix(2);
@@ -820,7 +848,7 @@ describe('Free Temperament', () => {
     );
     const pinkan = temperament.getMapping();
 
-    const [d, g] = temperament.numPeriodsGenerator();
+    const [d, [g]] = temperament.numPeriodsGenerators();
 
     const semifourth_ = toMonzo(new Fraction(15, 13));
     const semifourth = [semifourth_[0], semifourth_[1], semifourth_[5], 0];
