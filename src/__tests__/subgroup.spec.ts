@@ -182,4 +182,11 @@ describe('Fractional just intonation subgroup', () => {
     const subgroup = new Subgroup('5.41.9.13/7');
     expect(subgroup.wartLetters().join('')).toBe('cmqr');
   });
+
+  it('can convert standard monzos to subgroup monzos', () => {
+    const subgroup = new Subgroup('2.9.7/5');
+    expect(subgroup.primeMonzoToSubgroupMonzo([1, 2, 2, -2])).toEqual([
+      1, 1, -2,
+    ]);
+  });
 });

@@ -224,7 +224,7 @@ export class Subgroup {
     const dimensions = basisMonzos[0].length;
     const primeMonzo = toMonzoAndResidual(fraction, dimensions)[0];
 
-    const monzo = this.toMonzo_(primeMonzo, basisMonzos);
+    const monzo = this.primeMonzoToSubgroupMonzo(primeMonzo, basisMonzos);
 
     monzo.forEach((component, index) => {
       fraction = fraction.div(this.basis[index].pow(component)!);
@@ -233,7 +233,13 @@ export class Subgroup {
     return [monzo, fraction];
   }
 
-  private toMonzo_(primeMonzo: Monzo, basisMonzos?: Monzo[]): Monzo {
+  /**
+   * Convert a monzo in the standard prime basis to a monzo in the subgroup's basis.
+   * @param primeMonzo Array of prime exponents.
+   * @param basisMonzos Precalculated array of the subgroup's basis as arrays of prime exponents.
+   * @returns Array of basis exponents.
+   */
+  primeMonzoToSubgroupMonzo(primeMonzo: Monzo, basisMonzos?: Monzo[]): Monzo {
     if (basisMonzos === undefined) {
       basisMonzos = this.basisMonzos();
     }
@@ -497,7 +503,7 @@ export class Subgroup {
     ) {
       if (primeMapping) {
         // XXX: Strips away residual
-        return this.toMonzo_(interval as Monzo);
+        return this.primeMonzoToSubgroupMonzo(interval as Monzo);
       } else {
         const result = [...interval];
         while (result.length < this.basis.length) {
