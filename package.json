@@ -54,6 +54,6 @@
   "dependencies": {
     "mathjs": "^12.3.0",
     "ts-geometric-algebra": "^0.5.1",
-    "xen-dev-utils": "^0.2.5"
+    "xen-dev-utils": "^0.2.6"
   }
 }
