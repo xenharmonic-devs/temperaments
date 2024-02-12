@@ -136,7 +136,7 @@ abstract class BaseTemperament {
   /**
    * Obtain the period and generator of a rank 2 temperament.
    * @param options Options determining how the temperament is interpreted as a tuning and the units of the result.
-   * @returns A pair `[period, generator]` in cents (default) or the specified units.
+   * @returns An array of `[period, generators...]` in cents (default) or the specified units.
    */
   periodGenerators(options?: TuningOptions): number[] {
     const mappingOptions = Object.assign({}, options || {});
